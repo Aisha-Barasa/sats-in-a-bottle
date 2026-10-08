@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bottle sealed — Sats in a Bottle</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="wrap nav">
+  <a href="index.html" class="brand"><span class="dot"></span> Sats in a Bottle</a>
+  <nav class="nav-links">
+    <a href="dashboard.html">My bottles</a>
+  </nav>
+  <a href="create.html" class="btn btn-primary btn-sm">Seal another</a>
+</header>
+
+<main class="app-main">
+  <div class="wrap narrow" style="text-align:center;">
+    <div class="confirm-seal">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M5 12l4.5 4.5L19 7" stroke="#FDF9EE" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h2 id="headline">Your bottle is sealed</h2>
+    <p class="muted" id="subline">It will open automatically on the day you chose — no reminders needed.</p>
+
+    <div class="paper" style="text-align:left; margin-top: 32px;">
+      <div class="summary-row"><span class="k">To</span><span class="v" id="rTo">—</span></div>
+      <div class="summary-row"><span class="k">Occasion</span><span class="v" id="rOccasion">—</span></div>
+      <div class="summary-row"><span class="k">Opens on</span><span class="v" id="rDate">—</span></div>
+      <div class="summary-row"><span class="k">Sealed with</span><span class="v" id="rAmount">—</span></div>
+    </div>
+
+    <div style="margin-top:24px; text-align:left;">
+      <label class="field" style="margin-bottom:8px; display:block; font-size:0.86rem; font-weight:600; color:var(--mist);">
+        Share this link with the recipient, so they know it's coming
+      </label>
+      <div class="link-box">
+        <code id="shareLink">—</code>
+        <button class="btn btn-dark btn-sm" id="copyBtn" type="button">Copy</button>
+      </div>
+    </div>
+
+    <div style="display:flex; gap:12px; margin-top:32px;">
+      <a href="dashboard.html" class="btn btn-ghost btn-block">View my bottles</a>
+      <a href="create.html" class="btn btn-primary btn-block">Seal another</a>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Sealed with a Bitcoin timelock — unspendable by anyone, including us, until the chosen date.</span>
+  </div>
+</footer>
+
+<script src="js/app.js"></script>
+<script>
+  const id = getParam("id");
+  const bottle = Store.find(id);
+  if(!bottle){
+    document.getElementById("headline").textContent = "We couldn't find that bottle";
+    document.getElementById("subline").textContent = "It may have already been claimed, or the link is incorrect.";
+  } else {
+    document.getElementById("rTo").textContent = bottle.recipientName;
+    document.getElementById("rOccasion").textContent = bottle.occasion;
+    document.getElementById("rDate").textContent = formatDate(bottle.unlockDate);
+    document.getElementById("rAmount").textContent = `${formatSats(bottle.sats)} (${formatKes(bottle.kesAmount)})`;
+    const link = `${window.location.origin}${window.location.pathname.replace('confirm.html','unlock.html')}?id=${bottle.id}`;
+    document.getElementById("shareLink").textContent = link;
+    document.getElementById("copyBtn").onclick = () => {
+      navigator.clipboard.writeText(link);
+      document.getElementById("copyBtn").textContent = "Copied";
+      setTimeout(() => document.getElementById("copyBtn").textContent = "Copy", 1500);
+    };
+  }
+</script>
+</body>
+</html>

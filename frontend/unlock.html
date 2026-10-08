@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your bottle — Sats in a Bottle</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="wrap nav">
+  <a href="index.html" class="brand"><span class="dot"></span> Sats in a Bottle</a>
+  <nav class="nav-links"><a href="index.html">Home</a></nav>
+</header>
+
+<main class="app-main">
+  <div class="wrap narrow">
+
+    <!-- LOOKUP: shown when no id in URL -->
+    <section id="lookup" style="display:none; text-align:center;">
+      <h2>Find your bottle</h2>
+      <p class="muted">Paste the link or code someone shared with you.</p>
+      <div class="field" style="text-align:left;">
+        <input type="text" id="lookupInput" placeholder="Paste your bottle link or code">
+      </div>
+      <button class="btn btn-primary btn-block" id="lookupBtn">Find my bottle</button>
+      <p class="muted" id="lookupError" style="margin-top:14px; display:none;">We couldn't find a bottle with that code.</p>
+    </section>
+
+    <!-- SEALED: countdown -->
+    <section id="sealed-view" style="display:none;">
+      <div class="countdown-hero">
+        <span class="badge" id="fromBadge">—</span>
+        <h2 id="sealedHeadline">This bottle isn't open yet</h2>
+        <p class="muted" id="sealedSub">—</p>
+        <div class="countdown-grid">
+          <div class="countdown-cell"><span class="n" id="cd-days">0</span><span class="l">days</span></div>
+          <div class="countdown-cell"><span class="n" id="cd-hours">0</span><span class="l">hours</span></div>
+          <div class="countdown-cell"><span class="n" id="cd-mins">0</span><span class="l">minutes</span></div>
+          <div class="countdown-cell"><span class="n" id="cd-secs">0</span><span class="l">seconds</span></div>
+        </div>
+        <p class="muted" style="font-size:0.86rem;">
+          Sealed by a Bitcoin timelock — it opens automatically on
+          <strong id="unlockDateLabel">—</strong>, for everyone, no exceptions.
+        </p>
+      </div>
+    </section>
+
+    <!-- UNLOCKED: reveal -->
+    <section id="unlocked-view" style="display:none;">
+      <div class="reveal">
+        <span class="badge" id="openedBadge">—</span>
+        <h2 id="unlockedHeadline">A message has arrived</h2>
+
+        <div class="paper" style="text-align:left; margin-top:20px;">
+          <p class="muted" id="fromLine" style="margin-bottom:16px;">—</p>
+          <div id="audioBlock" style="display:none;">
+            <audio id="notePlayer" controls style="width:100%;"></audio>
+          </div>
+          <div id="textBlock" style="display:none;">
+            <p id="noteText" style="font-family: var(--font-display); font-size:1.15rem; line-height:1.6;"></p>
+          </div>
+        </div>
+
+        <div class="claim-box">
+          <div>
+            <div class="muted" style="font-size:0.85rem;">Attached to this message</div>
+            <div class="amt" id="claimAmt">—</div>
+          </div>
+          <button class="btn btn-primary" id="claimBtn" type="button">Cash out to M-Pesa</button>
+        </div>
+
+        <div id="claimedState" style="display:none; margin-top:18px; text-align:center;">
+          <p class="muted">Sent to <strong id="claimedPhone">—</strong>. Check your M-Pesa messages.</p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<script src="js/app.js"></script>
+<script>
+  const id = getParam("id");
+  let bottle = id ? Store.find(id) : null;
+
+  if(!bottle){
+    document.getElementById("lookup").style.display = "block";
+    document.getElementById("lookupBtn").onclick = () => {
+      const raw = document.getElementById("lookupInput").value.trim();
+      const parsedId = raw.includes("id=") ? raw.split("id=").pop() : raw;
+      const found = Store.find(parsedId);
+      if(found){ window.location.href = "unlock.html?id=" + parsedId; }
+      else{ document.getElementById("lookupError").style.display = "block"; }
+    };
+  } else {
+    render();
+  }
+
+  function render(){
+    if(!isUnlocked(bottle)){
+      showSealed();
+      const int = setInterval(() => {
+        if(isUnlocked(bottle)){ clearInterval(int); showUnlocked(); }
+        else updateCountdown();
+      }, 1000);
+      updateCountdown();
+    } else {
+      showUnlocked();
+    }
+  }
+
+  function showSealed(){
+    document.getElementById("sealed-view").style.display = "block";
+    document.getElementById("fromBadge").textContent = `from ${bottle.senderName}`;
+    document.getElementById("sealedSub").textContent = `A ${bottle.occasion.toLowerCase()} message for ${bottle.recipientName}, waiting for the right day.`;
+    document.getElementById("unlockDateLabel").textContent = formatDate(bottle.unlockDate);
+  }
+
+  function updateCountdown(){
+    const t = timeUntil(bottle.unlockDate);
+    document.getElementById("cd-days").textContent = t.days;
+    document.getElementById("cd-hours").textContent = t.hours;
+    document.getElementById("cd-mins").textContent = t.minutes;
+    document.getElementById("cd-secs").textContent = t.seconds;
+  }
+
+  function showUnlocked(){
+    document.getElementById("sealed-view").style.display = "none";
+    document.getElementById("unlocked-view").style.display = "block";
+    document.getElementById("openedBadge").textContent = bottle.occasion;
+    document.getElementById("unlockedHeadline").textContent = `${bottle.recipientName}, this one's for you`;
+    document.getElementById("fromLine").textContent = `From ${bottle.senderName} — sealed on ${new Date(bottle.createdAt).toLocaleDateString("en-KE")}`;
+
+    if(bottle.messageType === "voice" && bottle.audioDataUrl){
+      document.getElementById("audioBlock").style.display = "block";
+      document.getElementById("notePlayer").src = bottle.audioDataUrl;
+    } else {
+      document.getElementById("textBlock").style.display = "block";
+      document.getElementById("noteText").textContent = bottle.letterText || "(No written message was left with this bottle.)";
+    }
+
+    document.getElementById("claimAmt").textContent = `${formatSats(bottle.sats)} · ${formatKes(bottle.kesAmount)}`;
+
+    if(bottle.status === "claimed"){
+      document.getElementById("claimBtn").style.display = "none";
+      document.getElementById("claimedState").style.display = "block";
+      document.getElementById("claimedPhone").textContent = bottle.recipientPhone;
+    }
+
+    document.getElementById("claimBtn").onclick = () => {
+      const btn = document.getElementById("claimBtn");
+      btn.disabled = true;
+      btn.textContent = "Sending...";
+      // In production: backend triggers a Daraja B2C payout to recipientPhone
+      setTimeout(() => {
+        Store.update(bottle.id, { status: "claimed" });
+        btn.style.display = "none";
+        document.getElementById("claimedState").style.display = "block";
+        document.getElementById("claimedPhone").textContent = bottle.recipientPhone;
+      }, 1800);
+    };
+  }
+</script>
+</body>
+</html>

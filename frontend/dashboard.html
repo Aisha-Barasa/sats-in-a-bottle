@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My bottles — Sats in a Bottle</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="wrap nav">
+  <a href="index.html" class="brand"><span class="dot"></span> Sats in a Bottle</a>
+  <nav class="nav-links">
+    <a href="index.html">Home</a>
+  </nav>
+  <a href="create.html" class="btn btn-primary btn-sm">Create a bottle</a>
+</header>
+
+<main class="app-main">
+  <div class="wrap">
+    <h2>My bottles</h2>
+    <p class="muted" style="margin-bottom:36px;">Everything you've sealed, and when it opens.</p>
+
+    <div class="bottle-list" id="bottleList"></div>
+
+    <div class="empty-state" id="emptyState" style="display:none;">
+      <h3>No bottles yet</h3>
+      <p>Once you seal one, it'll show up here with a live countdown.</p>
+      <div style="display:flex; gap:12px; justify-content:center; margin-top:20px;">
+        <a href="create.html" class="btn btn-primary">Create your first bottle</a>
+        <button class="btn btn-ghost" id="demoBtn" type="button">Load a demo bottle</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="js/app.js"></script>
+<script>
+  function statusFor(bottle){
+    if(isUnlocked(bottle)) return { cls: "opened", label: "Opened" };
+    const t = timeUntil(bottle.unlockDate);
+    if(t.days <= 7) return { cls: "soon", label: "Opening soon" };
+    return { cls: "sealed", label: "Sealed" };
+  }
+
+  function render(){
+    const bottles = Store.all();
+    const list = document.getElementById("bottleList");
+    const empty = document.getElementById("emptyState");
+    list.innerHTML = "";
+
+    if(bottles.length === 0){
+      empty.style.display = "block";
+      return;
+    }
+    empty.style.display = "none";
+
+    bottles.forEach(b => {
+      const s = statusFor(b);
+      const row = document.createElement("div");
+      row.className = "bottle-row";
+      row.innerHTML = `
+        <div class="info">
+          <h4>To ${b.recipientName} — ${b.occasion}</h4>
+          <p>${formatSats(b.sats)} · sealed ${new Date(b.createdAt).toLocaleDateString("en-KE")} · opens ${formatDate(b.unlockDate)}</p>
+        </div>
+        <div style="display:flex; align-items:center; gap:14px;">
+          <span class="status-pill ${s.cls}">${s.label}</span>
+          <a href="unlock.html?id=${b.id}" class="btn btn-ghost btn-sm">View</a>
+        </div>
+      `;
+      list.appendChild(row);
+    });
+  }
+
+  document.getElementById("demoBtn")?.addEventListener("click", () => {
+    const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+    const bottle = {
+      id: uid(),
+      recipientName: "Wangari",
+      recipientPhone: "0712 345 678",
+      senderName: "Njoki",
+      messageType: "letter",
+      letterText: "Wangari, by the time you hear this you're turning eighteen — and I hope you're exactly as stubborn and bright as you were at two. This is a little of what I saved while I was away. Use it well, and call your mother more than I did. With all my love, your Aunt Njoki.",
+      audioDataUrl: "",
+      occasion: "Birthday",
+      unlockDate: yesterday.toISOString().split("T")[0],
+      kesAmount: 5000,
+      sats: kesToSats(5000),
+      payerPhone: "0722 000 111",
+      createdAt: "2010-03-14T00:00:00.000Z",
+      status: "sealed"
+    };
+    Store.add(bottle);
+    render();
+  });
+
+  render();
+</script>
+</body>
+</html>

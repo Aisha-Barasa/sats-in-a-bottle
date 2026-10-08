@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create a bottle — Sats in a Bottle</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="on-paper">
+
+<header class="app-header">
+  <div class="wrap">
+    <a href="index.html" class="brand"><span class="dot"></span> Sats in a Bottle</a>
+    <div class="progress">
+      <div class="seg active" id="seg-1"></div>
+      <div class="seg" id="seg-2"></div>
+    </div>
+    <a href="index.html" class="btn btn-ghost btn-sm">Cancel</a>
+  </div>
+</header>
+
+<main class="app-main">
+  <div class="wrap narrow">
+
+    <!-- STEP 1: message + recipient -->
+    <section id="step-1">
+      <h2>Who is this for?</h2>
+      <p class="muted">Start with their details, then record or write what you want to say.</p>
+
+      <div class="field">
+        <label for="recipientName">Recipient's name</label>
+        <input type="text" id="recipientName" placeholder="e.g. Wangari Mwangi">
+      </div>
+      <div class="field">
+        <label for="recipientPhone">Their M-Pesa number</label>
+        <input type="tel" id="recipientPhone" placeholder="07XX XXX XXX">
+        <div class="hint">Used only to notify them when the bottle opens — nothing is sent now.</div>
+      </div>
+
+      <div class="field">
+        <label>Your message</label>
+        <div class="type-toggle">
+          <button type="button" id="tab-record" class="active">Record a voice note</button>
+          <button type="button" id="tab-write">Write a letter</button>
+        </div>
+
+        <div id="panel-record">
+          <div class="recorder">
+            <button type="button" class="rec-btn" id="recBtn" aria-label="Start recording">
+              <span class="sq" id="recIcon"></span>
+            </button>
+            <div class="rec-time" id="recTime">0:00</div>
+            <div class="rec-status" id="recStatus">Tap to start recording — up to 2 minutes</div>
+            <audio id="recPlayback" controls style="display:none;"></audio>
+          </div>
+        </div>
+
+        <div id="panel-write" style="display:none;">
+          <textarea id="letterText" placeholder="Dear Wangari, by the time you hear this..."></textarea>
+        </div>
+      </div>
+
+      <a href="#" class="btn btn-dark btn-block" id="toStep2">Continue</a>
+    </section>
+
+    <!-- STEP 2: occasion + date -->
+    <section id="step-2" style="display:none;">
+      <h2>When should it open?</h2>
+      <p class="muted">Pick what this bottle is for, then the exact date it should unlock.</p>
+
+      <div class="field">
+        <label>Occasion</label>
+        <div class="occasion-grid" id="occasionGrid">
+          <div class="occasion" data-val="Birthday">Birthday</div>
+          <div class="occasion" data-val="Graduation">Graduation</div>
+          <div class="occasion" data-val="Wedding">Wedding</div>
+          <div class="occasion" data-val="Anniversary">Anniversary</div>
+          <div class="occasion" data-val="Just because">Just because</div>
+          <div class="occasion" data-val="Other">Other</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="unlockDate">Unlock date</label>
+        <input type="date" id="unlockDate">
+        <div class="hint">Bitcoin's timelock keeps it sealed until this exact date — even from you.</div>
+      </div>
+
+      <div class="field">
+        <label for="senderName">Your name</label>
+        <input type="text" id="senderName" placeholder="e.g. Njoki Kamau">
+      </div>
+
+      <div style="display:flex; gap:12px;">
+        <a href="#" class="btn btn-ghost" id="backToStep1">Back</a>
+        <a href="#" class="btn btn-primary btn-block" id="toFund">Continue to funding</a>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<script src="js/app.js"></script>
+<script>
+  // ---------- draft persistence across steps ----------
+  const draft = JSON.parse(sessionStorage.getItem("bottleDraft") || "{}");
+  function saveDraft(patch){
+    Object.assign(draft, patch);
+    sessionStorage.setItem("bottleDraft", JSON.stringify(draft));
+  }
+
+  // ---------- message type toggle ----------
+  const tabRecord = document.getElementById("tab-record");
+  const tabWrite = document.getElementById("tab-write");
+  const panelRecord = document.getElementById("panel-record");
+  const panelWrite = document.getElementById("panel-write");
+  tabRecord.onclick = () => {
+    tabRecord.classList.add("active"); tabWrite.classList.remove("active");
+    panelRecord.style.display = "block"; panelWrite.style.display = "none";
+    saveDraft({ messageType: "voice" });
+  };
+  tabWrite.onclick = () => {
+    tabWrite.classList.add("active"); tabRecord.classList.remove("active");
+    panelWrite.style.display = "block"; panelRecord.style.display = "none";
+    saveDraft({ messageType: "letter" });
+  };
+  saveDraft({ messageType: draft.messageType || "voice" });
+
+  // ---------- voice recording ----------
+  let mediaRecorder, chunks = [], seconds = 0, timerInt;
+  const recBtn = document.getElementById("recBtn");
+  const recIcon = document.getElementById("recIcon");
+  const recTime = document.getElementById("recTime");
+  const recStatus = document.getElementById("recStatus");
+  const recPlayback = document.getElementById("recPlayback");
+
+  recBtn.onclick = async () => {
+    if(recBtn.classList.contains("recording")){
+      mediaRecorder.stop();
+      return;
+    }
+    try{
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      chunks = [];
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.ondataavailable = e => chunks.push(e.data);
+      mediaRecorder.onstop = () => {
+        clearInterval(timerInt);
+        recBtn.classList.remove("recording");
+        recIcon.className = "sq";
+        recStatus.textContent = "Recorded — you can re-record if you'd like.";
+        const blob = new Blob(chunks, { type: "audio/webm" });
+        const reader = new FileReader();
+        reader.onloadend = () => saveDraft({ audioDataUrl: reader.result });
+        reader.readAsDataURL(blob);
+        recPlayback.src = URL.createObjectURL(blob);
+        recPlayback.style.display = "block";
+        stream.getTracks().forEach(t => t.stop());
+      };
+      mediaRecorder.start();
+      recBtn.classList.add("recording");
+      recIcon.className = "dot-shape";
+      recStatus.textContent = "Recording — tap again to stop.";
+      seconds = 0;
+      timerInt = setInterval(() => {
+        seconds++;
+        const m = Math.floor(seconds/60), s = String(seconds%60).padStart(2,"0");
+        recTime.textContent = `${m}:${s}`;
+        if(seconds >= 120) mediaRecorder.stop();
+      }, 1000);
+    }catch(err){
+      recStatus.textContent = "Microphone access is needed to record. You can write a letter instead.";
+    }
+  };
+
+  // ---------- step navigation ----------
+  document.getElementById("toStep2").onclick = (e) => {
+    e.preventDefault();
+    const name = document.getElementById("recipientName").value.trim();
+    const phone = document.getElementById("recipientPhone").value.trim();
+    if(!name || !phone){ alert("Please add the recipient's name and phone number."); return; }
+    const letterText = document.getElementById("letterText").value.trim();
+    saveDraft({ recipientName: name, recipientPhone: phone, letterText });
+    if(draft.messageType === "voice" && !draft.audioDataUrl && !letterText){
+      if(!confirm("You haven't recorded a message yet. Continue anyway?")) return;
+    }
+    document.getElementById("step-1").style.display = "none";
+    document.getElementById("step-2").style.display = "block";
+    document.getElementById("seg-2").classList.add("active");
+    window.scrollTo(0,0);
+  };
+
+  document.getElementById("backToStep1").onclick = (e) => {
+    e.preventDefault();
+    document.getElementById("step-2").style.display = "none";
+    document.getElementById("step-1").style.display = "block";
+    document.getElementById("seg-2").classList.remove("active");
+  };
+
+  // ---------- occasion select ----------
+  let selectedOccasion = draft.occasion || null;
+  document.querySelectorAll(".occasion").forEach(el => {
+    if(el.dataset.val === selectedOccasion) el.classList.add("selected");
+    el.onclick = () => {
+      document.querySelectorAll(".occasion").forEach(o => o.classList.remove("selected"));
+      el.classList.add("selected");
+      selectedOccasion = el.dataset.val;
+      saveDraft({ occasion: selectedOccasion });
+    };
+  });
+
+  // sensible default min date = tomorrow
+  const dateInput = document.getElementById("unlockDate");
+  const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate()+1);
+  dateInput.min = tomorrow.toISOString().split("T")[0];
+
+  document.getElementById("toFund").onclick = (e) => {
+    e.preventDefault();
+    const unlockDate = dateInput.value;
+    const senderName = document.getElementById("senderName").value.trim();
+    if(!selectedOccasion){ alert("Please choose an occasion."); return; }
+    if(!unlockDate){ alert("Please choose an unlock date."); return; }
+    if(!senderName){ alert("Please add your name — it's how they'll know who the bottle is from."); return; }
+    saveDraft({ occasion: selectedOccasion, unlockDate, senderName });
+    window.location.href = "fund.html";
+  };
+</script>
+</body>
+</html>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fund your bottle — Sats in a Bottle</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="on-paper">
+
+<header class="app-header">
+  <div class="wrap">
+    <a href="index.html" class="brand"><span class="dot"></span> Sats in a Bottle</a>
+    <span class="muted" style="font-size:0.9rem;">Funding your bottle</span>
+    <a href="create.html" class="btn btn-ghost btn-sm">Back</a>
+  </div>
+</header>
+
+<main class="app-main">
+  <div class="wrap narrow">
+
+    <!-- STAGE A: amount -->
+    <section id="stage-amount">
+      <h2>How much would you like to attach?</h2>
+      <p class="muted">This isn't an investment — start small. You can always send another bottle later.</p>
+
+      <div class="field">
+        <label for="kesAmount">Amount in shillings</label>
+        <input type="number" id="kesAmount" placeholder="1000" min="50" step="50">
+      </div>
+
+      <div class="amount-display">
+        <div class="sats" id="satsPreview">0 sats</div>
+        <div class="kes" id="kesPreview">≈ KES 0</div>
+      </div>
+
+      <div style="display:flex; gap:8px; justify-content:center; margin-bottom:28px;">
+        <button type="button" class="btn btn-ghost btn-sm quick-amt" data-v="500">KES 500</button>
+        <button type="button" class="btn btn-ghost btn-sm quick-amt" data-v="1000">KES 1,000</button>
+        <button type="button" class="btn btn-ghost btn-sm quick-amt" data-v="5000">KES 5,000</button>
+        <button type="button" class="btn btn-ghost btn-sm quick-amt" data-v="10000">KES 10,000</button>
+      </div>
+
+      <a href="#" class="btn btn-primary btn-block" id="toPhone">Continue</a>
+    </section>
+
+    <!-- STAGE B: phone confirm -->
+    <section id="stage-phone" style="display:none;">
+      <h2>Confirm payment details</h2>
+      <p class="muted">We'll send a prompt to this number to complete payment via M-Pesa.</p>
+
+      <div class="field">
+        <label for="payerPhone">Your M-Pesa number</label>
+        <input type="tel" id="payerPhone" placeholder="07XX XXX XXX">
+      </div>
+
+      <div class="paper" style="background:var(--parchment-soft); padding:20px; margin-bottom:24px;">
+        <div class="summary-row"><span class="k">Amount</span><span class="v" id="confirmKes">—</span></div>
+        <div class="summary-row"><span class="k">Bitcoin equivalent</span><span class="v" id="confirmSats">—</span></div>
+        <div class="summary-row"><span class="k">Sealed until</span><span class="v" id="confirmDate">—</span></div>
+      </div>
+
+      <a href="#" class="btn btn-primary btn-block" id="sendStk">Send M-Pesa prompt</a>
+    </section>
+
+    <!-- STAGE C: STK push simulation -->
+    <section id="stage-stk" style="display:none;">
+      <div class="stk-phone">
+        <div class="spinner"></div>
+        <h3>Check your phone</h3>
+        <p class="muted" style="text-align:center;">Enter your M-Pesa PIN to confirm payment of <strong id="stkAmount"></strong>.</p>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<script src="js/app.js"></script>
+<script>
+  const draft = JSON.parse(sessionStorage.getItem("bottleDraft") || "{}");
+  if(!draft.recipientName){ window.location.href = "create.html"; }
+
+  const kesInput = document.getElementById("kesAmount");
+  const satsPreview = document.getElementById("satsPreview");
+  const kesPreview = document.getElementById("kesPreview");
+
+  function refreshPreview(){
+    const kes = Number(kesInput.value) || 0;
+    satsPreview.textContent = formatSats(kesToSats(kes));
+    kesPreview.textContent = "≈ " + formatKes(kes);
+  }
+  kesInput.addEventListener("input", refreshPreview);
+  document.querySelectorAll(".quick-amt").forEach(btn => {
+    btn.onclick = () => { kesInput.value = btn.dataset.v; refreshPreview(); };
+  });
+
+  document.getElementById("toPhone").onclick = (e) => {
+    e.preventDefault();
+    const kes = Number(kesInput.value);
+    if(!kes || kes < 50){ alert("Please enter at least KES 50."); return; }
+    sessionStorage.setItem("bottleDraft", JSON.stringify({...draft, kesAmount: kes, sats: kesToSats(kes)}));
+    document.getElementById("confirmKes").textContent = formatKes(kes);
+    document.getElementById("confirmSats").textContent = formatSats(kesToSats(kes));
+    document.getElementById("confirmDate").textContent = formatDate(draft.unlockDate);
+    document.getElementById("stage-amount").style.display = "none";
+    document.getElementById("stage-phone").style.display = "block";
+    window.scrollTo(0,0);
+  };
+
+  document.getElementById("sendStk").onclick = (e) => {
+    e.preventDefault();
+    const phone = document.getElementById("payerPhone").value.trim();
+    if(!phone){ alert("Please add your M-Pesa number."); return; }
+    const kes = Number(kesInput.value);
+    document.getElementById("stkAmount").textContent = formatKes(kes);
+    document.getElementById("stage-phone").style.display = "none";
+    document.getElementById("stage-stk").style.display = "block";
+    window.scrollTo(0,0);
+
+    // ---- simulate Daraja STK push confirmation ----
+    // In production: backend calls Safaricom Daraja API, waits for the
+    // callback, then creates the CLTV-locked BTC transaction server-side.
+    setTimeout(() => {
+      const bottle = {
+        id: uid(),
+        recipientName: draft.recipientName,
+        recipientPhone: draft.recipientPhone,
+        senderName: draft.senderName,
+        messageType: draft.messageType,
+        letterText: draft.letterText || "",
+        audioDataUrl: draft.audioDataUrl || "",
+        occasion: draft.occasion,
+        unlockDate: draft.unlockDate,
+        kesAmount: kes,
+        sats: kesToSats(kes),
+        payerPhone: phone,
+        createdAt: new Date().toISOString(),
+        status: "sealed"
+      };
+      Store.add(bottle);
+      sessionStorage.removeItem("bottleDraft");
+      window.location.href = "confirm.html?id=" + bottle.id;
+    }, 2600);
+  };
+
+  refreshPreview();
+</script>
+</body>
+</html>
