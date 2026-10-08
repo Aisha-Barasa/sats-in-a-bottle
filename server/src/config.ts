@@ -45,11 +45,21 @@ function load(): Config {
   if (cfg.BITIKA_ENV === "live" && cfg.BITCOIN_NETWORK !== "mainnet") {
     throw new Error("BITIKA_ENV=live requires BITCOIN_NETWORK=mainnet");
   }
+  if (cfg.FUNDING_PROVIDER === "bitika") {
+    if (!cfg.BITIKA_API_KEY) throw new Error("FUNDING_PROVIDER=bitika requires BITIKA_API_KEY");
+    // Key prefixes are bk_test_ / bk_live_; refuse a key that doesn't match the env.
+    if (!cfg.BITIKA_API_KEY.startsWith(`bk_${cfg.BITIKA_ENV}_`)) {
+      throw new Error(`BITIKA_API_KEY does not look like a ${cfg.BITIKA_ENV} key (expected bk_${cfg.BITIKA_ENV}_ prefix)`);
+    }
+  }
   return cfg;
 }
 
 export const config = load();
 
 export const mempoolApiUrl = config.MEMPOOL_API_URL ?? MEMPOOL_DEFAULTS[config.BITCOIN_NETWORK];
+
+// Bitika serves sandbox and live from the same host; the key decides which.
+export const bitikaBaseUrl = (config.BITIKA_BASE_URL || "https://bitikaserver.up.railway.app").replace(/\/+$/, "");
 
 export const isSqlite = config.DATABASE_URL.startsWith("file:");
