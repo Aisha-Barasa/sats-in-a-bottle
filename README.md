@@ -394,9 +394,23 @@ Requires [Node.js](https://nodejs.org/) and npm (use [nvm](https://github.com/nv
 ```sh
 git clone https://github.com/Floramuna/sats-in-a-bottle.git
 cd sats-in-a-bottle
-npm install
-npm run dev
+cp .env.example .env                 # frontend: VITE_API_URL
+cp server/.env.example server/.env   # backend: database, network, Bitika key
+npm run setup                        # installs frontend + server, creates the SQLite dev database
+npm run dev:all                      # web on :5173, API on :4000
 ```
+
+| Script | What it does |
+| --- | --- |
+| `npm run dev:all` | Frontend and API together (Ctrl+C stops both) |
+| `npm run dev` / `npm run dev:server` | Frontend or API alone |
+| `npm run test:server` | Server unit and API tests |
+
+The server uses SQLite (`DATABASE_URL=file:./dev.db`) by default; set a `postgresql://…` URL to use PostgreSQL.
+M-Pesa funding is off until `FUNDING_PROVIDER=bitika` and a Bitika key are set in `server/.env`.
+
+- API reference: [`docs/API.md`](docs/API.md)
+- End-to-end test checklist (Bitika sandbox + signet): [`docs/E2E-CHECKLIST.md`](docs/E2E-CHECKLIST.md)
 
 ---
 
