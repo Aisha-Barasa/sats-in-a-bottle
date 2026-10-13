@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import BottleCanvas from '../components/BottleCanvas.jsx';
 import { Footer, Nav } from '../components/Layout.jsx';
 import { useReveal } from '../components/ui.jsx';
-import { Blocks, MINT, YEL, INK } from '../components/Blocks.jsx';
+import { Blocks } from '../components/Blocks.jsx';
 
 const INTRO_MS = 5200;                  // first play, scroll locked
 const LOOP = { hold: 1400, open: 2000, rest: 1300, fade: 350, build: 4200 }; // then it repeats

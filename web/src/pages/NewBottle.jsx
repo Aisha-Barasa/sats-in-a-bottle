@@ -46,7 +46,7 @@ export default function NewBottle() {
   const [inKes, setInKes] = useState(true);
   const useKes = mpesa && inKes;
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
-  const at = f.at ? new Date(f.at) : null;
+  const at = useMemo(() => (f.at ? new Date(f.at) : null), [f.at]);
   const kes = Number(f.kes);
   const { quote, error: quoteError } = useKesQuote(useKes && step === 3 && Number.isInteger(kes) && kes >= 10 && kes <= 10_000 ? kes : 0, useKes);
   const sats = useKes ? quote?.sats ?? 0 : Number(f.sats);
