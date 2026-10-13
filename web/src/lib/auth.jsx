@@ -1,30 +1,23 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { get, post, setCsrf } from './api.js';
+import { api, ensureSession, getSession } from './api.js';
 
+// No passwords: a sender gets an anonymous session the first time they seal a bottle.
+// Recipients never need one; their share link is their access.
 const Ctx = createContext(null);
 export const useAuth = () => useContext(Ctx);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [ready, setReady] = useState(false);
+  const [session, setSession] = useState(() => getSession());
   const [config, setConfig] = useState(null);
 
-  const refresh = useCallback(async () => {
-    try { const r = await get('/user/profile'); setCsrf(r.csrfToken); setUser(r.user); }
-    catch { setUser(null); setCsrf(''); }
+  useEffect(() => { api.health().then(setConfig).catch(() => setConfig({ ok: false })); }, []);
+
+  const start = useCallback(async (name) => {
+    const s = await ensureSession(name);
+    setSession(s);
+    return s;
   }, []);
 
-  useEffect(() => {
-    (async () => {
-      await Promise.all([refresh(), get('/health').then(setConfig).catch(() => {})]);
-      setReady(true);
-    })();
-  }, [refresh]);
-
-  const value = useMemo(() => ({
-    user, ready, config, refresh,
-    async login(email, password) { const r = await post('/auth/login', { email, password }); setCsrf(r.csrfToken); setUser(r.user); return r.user; },
-    async logout() { try { await post('/auth/logout'); } finally { setCsrf(''); setUser(null); } },
-  }), [user, ready, config, refresh]);
+  const value = useMemo(() => ({ session, config, ready: config !== null, start }), [session, config, start]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

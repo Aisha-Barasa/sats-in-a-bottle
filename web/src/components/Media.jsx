@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { api } from '../lib/api.js';
 
 const MAX_REC_SECONDS = 120;
+// The voice note and photo travel inside the encrypted message, which the server caps at about 8 MB.
+const MAX_AUDIO_BYTES = 4 * 1024 * 1024;
 const pickMime = () => ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'].find((t) => window.MediaRecorder?.isTypeSupported?.(t)) || '';
 
 export function VoiceRecorder({ value, onChange }) {
@@ -23,7 +24,8 @@ export function VoiceRecorder({ value, onChange }) {
     try {
       stream.current = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mime = pickMime();
-      const r = new MediaRecorder(stream.current, mime ? { mimeType: mime } : undefined);
+      // 32 kbps keeps a 2-minute note near 0.5 MB, well inside the encrypted message limit.
+      const r = new MediaRecorder(stream.current, { ...(mime ? { mimeType: mime } : {}), audioBitsPerSecond: 32_000 });
       const chunks = [];
       r.ondataavailable = (e) => e.data.size && chunks.push(e.data);
       r.onstop = () => { stream.current.getTracks().forEach((t) => t.stop()); onChange(new Blob(chunks, { type: r.mimeType || 'audio/webm' })); };
@@ -41,7 +43,7 @@ export function VoiceRecorder({ value, onChange }) {
         {!rec ? <button type="button" className="btn btn-dark btn-sm" onClick={start}>{value ? 'Re-record' : 'Record'}</button>
           : <button type="button" className="btn btn-danger btn-sm" onClick={stop}>Stop</button>}
         {rec && <span className="rec"><span className="dot" /><span className="mono">{String(Math.floor(secs / 60)).padStart(2, '0')}:{String(secs % 60).padStart(2, '0')}</span></span>}
-        <label className="btn btn-ghost btn-sm" style={{ cursor: 'pointer' }}>Upload file<input type="file" accept="audio/*" hidden onChange={(e) => { const f = e.target.files[0]; if (f && f.size <= 6 * 1024 * 1024) onChange(f); else if (f) setErr('Audio must be under 6 MB'); e.target.value = ''; }} /></label>
+        <label className="btn btn-ghost btn-sm" style={{ cursor: 'pointer' }}>Upload file<input type="file" accept="audio/*" hidden onChange={(e) => { const f = e.target.files[0]; if (f && f.size <= MAX_AUDIO_BYTES) onChange(f); else if (f) setErr('Audio must be under 4 MB'); e.target.value = ''; }} /></label>
         {value && !rec && <button type="button" className="linkbtn body-sm" onClick={() => onChange(null)}>Remove</button>}
       </div>
       {err && <p className="err">{err}</p>}
@@ -74,10 +76,4 @@ export function PhotoPicker({ value, onChange }) {
       {err && <p className="err">{err}</p>}
     </div>
   );
-}
-
-export async function uploadMedia(bottleId, blob) {
-  const fd = new FormData();
-  fd.append('file', blob, blob.name || 'upload');
-  return api('POST', `/bottles/${bottleId}/attachments`, fd);
 }

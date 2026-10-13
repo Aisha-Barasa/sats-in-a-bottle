@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import QRCode from 'qrcode';
 import { splitDuration, STATUS } from '../lib/format.js';
 import { useToast } from './Toast.jsx';
 
@@ -7,7 +8,7 @@ export const Loading = () => <div className="center-screen"><Spinner /></div>;
 
 export function StatusTag({ status }) {
   const s = STATUS[status] || { label: status };
-  const cls = status === 'ready' ? 'yellow' : status === 'sealed' ? 'dark' : status === 'claimed' ? '' : 'gray';
+  const cls = status === 'unlockable' ? 'yellow' : status === 'sealed' ? 'dark' : status === 'claimed' ? '' : 'gray';
   return <span className={`tag ${cls}`}>{s.label}</span>;
 }
 
@@ -42,7 +43,15 @@ export function CopyButton({ text, label = 'Copy' }) {
   );
 }
 
-export function QrBox({ src, alt }) {
+/** QR code drawn in the browser, so addresses and share links never pass through a third party. */
+export function QrBox({ text, alt }) {
+  const [src, setSrc] = useState('');
+  useEffect(() => {
+    let live = true;
+    if (!text) return setSrc('');
+    QRCode.toDataURL(text, { margin: 1, width: 360, errorCorrectionLevel: 'M' }).then((u) => live && setSrc(u)).catch(() => live && setSrc(''));
+    return () => { live = false; };
+  }, [text]);
   return <div className="qr">{src ? <img src={src} alt={alt} /> : null}</div>;
 }
 

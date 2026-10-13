@@ -9,9 +9,9 @@ const INTRO_MS = 5200;                  // first play, scroll locked
 const LOOP = { hold: 1400, open: 2000, rest: 1300, fade: 350, build: 4200 }; // then it repeats
 
 const TRIO = [
-  ['Message', 'Text, a voice note or a photo. Encrypted until it opens.', ['#d1ffca', '#fff', '#000']],
-  ['Amount', 'From 1,000 sats. Lightning or on-chain.', ['#fff100', '#fff', '#000']],
-  ['Condition', 'A date, or a milestone only you can release.', ['#fff', '#d1ffca', '#fff100']],
+  ['Message', 'A letter, a voice note or a photo. Encrypted until it opens.', ['#d1ffca', '#fff', '#000']],
+  ['Amount', 'From a few hundred shillings. M-Pesa or bitcoin.', ['#fff100', '#fff', '#000']],
+  ['Date', 'A birthday, a graduation, a day you choose.', ['#fff', '#d1ffca', '#fff100']],
 ];
 const IDEAS = [
   ['Birthdays', 'Write it now. It opens on the day.', 'cake'],
@@ -85,7 +85,7 @@ export default function Landing() {
           <h1 className="h-hero">
             <span>Not just</span><span>a transfer.</span><span>A bottle with</span><span>a date on it.</span>
           </h1>
-          <p className="hero-p">Send bitcoin with a message inside. It stays sealed until the day you choose, then they claim it to their own wallet.</p>
+          <p className="hero-p">Pay in shillings with M-Pesa, add a message, pick the day. Bitcoin keeps it sealed until then, and they claim it to their own wallet.</p>
         </div>
         {!done && <button className="skip-link" onClick={() => skipRef.current()}>Skip</button>}
       </section>
@@ -93,13 +93,13 @@ export default function Landing() {
       <section className="dk arc" id="how" data-dark>
         <div className="wrap" ref={r1}>
           <div className="cols3 reveal">
-            {[['Lock.', 'Fund a bottle from any Lightning wallet or on-chain. The sats are held until it opens.'],
+            {[['Lock.', 'Top up with M-Pesa or send bitcoin. A Bitcoin timelock holds the sats until the day.'],
               ['Wait.', 'The message stays hidden from everyone, the recipient included, until the day.'],
-              ['Claim.', 'They get an email, read your message and claim to their own Lightning address.']].map(([t, d]) => (
+              ['Claim.', 'They open your link, read your message and claim the sats to their own wallet.']].map(([t, d]) => (
               <div key={t}><h2 className="h-col">{t}</h2><p className="p-dk">{d}</p></div>))}
           </div>
           <h2 className="h-statement reveal">Sats that stay put until the day.</h2>
-          <div className="p-stack reveal"><p>You pick the amount, the date and the words.</p><p>After you seal it, none of it can be changed.</p></div>
+          <div className="p-stack reveal"><p>You pick the amount, the date and the words.</p><p>After you seal it, none of it can be changed.</p><p>Built first for Kenyans abroad who already send money home and want to send more than money.</p></div>
         </div>
       </section>
 
@@ -116,12 +116,12 @@ export default function Landing() {
         <div className="wrap" ref={r3}>
           <h2 className="h-statement reveal">Built to be trusted.</h2>
           <div className="cols3 reveal">
-            {[['Encrypted.', 'Every bottle has its own key. A copy of the database reads as noise.'],
-              ['Checked.', 'Addresses and invoices are validated before anything is sent.'],
-              ['Once.', 'A payout can only happen one time. The lock is enforced on our server.']].map(([t, d]) => (
+            {[['Encrypted.', 'Your message is encrypted on your device. The key lives only in the link you share.'],
+              ['Locked.', 'The date is enforced by Bitcoin itself, not by our server. Nobody can open it early.'],
+              ['Yours.', 'We never hold the sats or the keys. You can check the lock on any block explorer.']].map(([t, d]) => (
               <div key={t}><h2 className="h-col">{t}</h2><p className="p-dk">{d}</p></div>))}
           </div>
-          <p className="p-dk fine reveal">We hold the sats until they are claimed, so you are trusting us. Each bottle is capped during early access.</p>
+          <p className="p-dk fine reveal">Whoever holds the share link can claim once it opens, so send it privately. There is no undo after you fund it.</p>
         </div>
       </section>
 
@@ -133,7 +133,7 @@ export default function Landing() {
             <div className="feature-copy">
               <h3 className="h-feature">Birthdays that arrive on time.</h3>
               <p>Write it now. It opens on the day, not before.</p>
-              <Link to="/register" className="btn-dark-sm">Create one</Link>
+              <Link to="/create" className="btn-dark-sm">Create one</Link>
             </div>
             <div className="feature-art"><Blocks model="cake" size={270} /></div>
           </div>
@@ -146,14 +146,14 @@ export default function Landing() {
             <article className="idea" key={t}>
               <div className="idea-art"><Blocks model={model} size={118} delay={i * 4} reverse={i === 1} /></div>
               <h3>{t}</h3><p>{d}</p>
-              <Link to="/register" className="btn-gray">Create one</Link>
+              <Link to="/create" className="btn-gray">Create one</Link>
             </article>))}
         </div>
       </section>
 
       <section className="split">
-        <Link to="/register" className="split-half"><h2 className="h-split">Create<br />a bottle</h2><span className="arrow-box" aria-hidden="true">↗</span><p>About two minutes.</p></Link>
-        <Link to="/login" className="split-half"><h2 className="h-split">Sign<br />in</h2><span className="arrow-box" aria-hidden="true">↗</span><p>Pick up where you left off.</p></Link>
+        <Link to="/create" className="split-half"><h2 className="h-split">Create<br />a bottle</h2><span className="arrow-box" aria-hidden="true">↗</span><p>About two minutes.</p></Link>
+        <Link to="/find" className="split-half"><h2 className="h-split">I got<br />a bottle</h2><span className="arrow-box" aria-hidden="true">↗</span><p>Open the link you were sent.</p></Link>
       </section>
       <Footer />
     </>
