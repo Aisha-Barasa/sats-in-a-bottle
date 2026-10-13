@@ -24,6 +24,12 @@ const schema = z.object({
   BITIKA_API_KEY: z.string().optional(),
   BITIKA_BASE_URL: z.string().optional(),
   BITIKA_WEBHOOK_SECRET: z.string().optional(),
+
+  // Demo-only shortcuts (skip a bottle to its next state). Refused in production and on mainnet.
+  DEV_TOOLS: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((v) => v === "true"),
 });
 
 export type Config = z.infer<typeof schema>;
@@ -44,6 +50,9 @@ function load(): Config {
   const cfg = parsed.data;
   if (cfg.BITIKA_ENV === "live" && cfg.BITCOIN_NETWORK !== "mainnet") {
     throw new Error("BITIKA_ENV=live requires BITCOIN_NETWORK=mainnet");
+  }
+  if (cfg.DEV_TOOLS && (cfg.NODE_ENV === "production" || cfg.BITCOIN_NETWORK === "mainnet")) {
+    throw new Error("DEV_TOOLS=true is only allowed outside production and off mainnet");
   }
   if (cfg.FUNDING_PROVIDER === "bitika") {
     if (!cfg.BITIKA_API_KEY) throw new Error("FUNDING_PROVIDER=bitika requires BITIKA_API_KEY");

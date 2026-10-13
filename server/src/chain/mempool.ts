@@ -12,7 +12,13 @@ export interface ChainClient {
   getTipHeight(): Promise<number>;
   getMedianTimePast(): Promise<number>;
   isOutputSpent(txid: string, vout: number): Promise<boolean>;
+  /** sat/vB the network currently wants for confirmation within ~30 minutes. */
+  getFeeRate(): Promise<number>;
+  /** Relays a signed transaction; returns its txid or throws BroadcastError. */
+  broadcast(hex: string): Promise<string>;
 }
+
+export class BroadcastError extends Error {}
 
 export class MempoolClient implements ChainClient {
   constructor(private readonly baseUrl: string = mempoolApiUrl) {}
@@ -40,5 +46,18 @@ export class MempoolClient implements ChainClient {
   async isOutputSpent(txid: string, vout: number): Promise<boolean> {
     const body = (await (await this.get(`/tx/${txid}/outspend/${vout}`)).json()) as { spent: boolean };
     return body.spent;
+  }
+
+  async getFeeRate(): Promise<number> {
+    const fees = (await (await this.get("/v1/fees/recommended")).json()) as { halfHourFee: number };
+    return fees.halfHourFee;
+  }
+
+  async broadcast(hex: string): Promise<string> {
+    const res = await fetch(`${this.baseUrl}/tx`, { method: "POST", body: hex, signal: AbortSignal.timeout(15_000) });
+    const text = (await res.text()).trim();
+    // mempool.space returns the node's rejection reason as plain text.
+    if (!res.ok) throw new BroadcastError(text.slice(0, 300) || `HTTP ${res.status}`);
+    return text;
   }
 }

@@ -29,6 +29,10 @@ model Bottle {
   owner           User              @relation(fields: [ownerId], references: [id])
   recipientName   String
   recipientPubkey String?
+  // Shown to the recipient ("from Njoki") and on the share page.
+  senderName      String?
+  // birthday | graduation | wedding | anniversary | new_baby | just_because | other
+  occasion        String?
   title           String
   // draft | awaiting_funding | funded | sealed | unlockable | claimed (see src/domain/bottleStateMachine.ts)
   status          String            @default("draft")

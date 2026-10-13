@@ -10,7 +10,7 @@ let provider: MockBitikaProvider;
 let app: ReturnType<typeof createApp>;
 beforeEach(() => {
   provider = new MockBitikaProvider();
-  app = createApp({ fundingProvider: provider });
+  app = createApp({ fundingProvider: provider, chain: null });
 });
 
 async function awaitingBottle() {

@@ -32,6 +32,19 @@ function handleProviderError(err: unknown): never {
   throw err;
 }
 
+/** GET /api/funding/quote?kesAmount= : KES -> sats before a bottle exists (the create wizard prices in shillings). */
+export function quoteRouter(provider: FundingProvider | null) {
+  const router = Router();
+  router.use(requireUser);
+  router.get("/quote", async (req, res) => {
+    const p = requireProvider(provider);
+    const { kesAmount } = parse(z.object({ kesAmount: z.coerce.number().int().min(p.minKes).max(p.maxKes) }), req.query);
+    const quote = await p.quote(kesAmount).catch(handleProviderError);
+    res.json({ ...quote, provider: p.name });
+  });
+  return router;
+}
+
 /** Owner-facing M-Pesa -> Lightning endpoints, mounted under /api/bottles/:id/funding/mpesa. */
 export function mpesaRouter(provider: FundingProvider | null) {
   const router = Router({ mergeParams: true });

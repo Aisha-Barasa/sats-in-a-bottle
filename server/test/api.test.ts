@@ -93,7 +93,7 @@ describe("recipient access", () => {
     const id = await createFundableBottle(token);
     const issued = await request(app).post(`/api/bottles/${id}/access`).set("Authorization", `Bearer ${token}`).expect(201);
     expect(issued.body.token).toMatch(/^[A-Za-z0-9_-]{43}$/);
-    expect(issued.body.url).toContain(`/bottle/${issued.body.token}`);
+    expect(issued.body.url).toContain(`/open/${issued.body.token}`);
 
     const stored = await prisma.recipientAccess.findFirst({ where: { bottleId: id } });
     expect(stored?.tokenHash).not.toBe(issued.body.token);

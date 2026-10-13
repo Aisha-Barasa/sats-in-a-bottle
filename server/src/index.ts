@@ -5,12 +5,14 @@ import { startWatcher } from "./chain/watcher.js";
 import { createFundingProvider } from "./funding/index.js";
 
 const fundingProvider = createFundingProvider();
+const chain = new MempoolClient();
 
-createApp({ fundingProvider }).listen(config.PORT, () => {
+createApp({ fundingProvider, chain }).listen(config.PORT, () => {
   const funding = fundingProvider ? `${fundingProvider.name} (${config.BITIKA_ENV})` : "disabled";
   console.log(`server listening on :${config.PORT} (${config.BITCOIN_NETWORK}, funding: ${funding})`);
   if (fundingProvider && !config.BITIKA_WEBHOOK_SECRET) {
     console.warn("BITIKA_WEBHOOK_SECRET not set: webhooks will be rejected; status falls back to polling.");
   }
+  if (config.DEV_TOOLS) console.warn("DEV_TOOLS is on: bottles can be skipped ahead without real funds.");
 });
-startWatcher(new MempoolClient());
+startWatcher(chain);

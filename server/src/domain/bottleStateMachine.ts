@@ -40,6 +40,11 @@ export function canTransition(from: string, to: string): boolean {
   return isBottleStatus(from) && isBottleStatus(to) && TRANSITIONS[from].includes(to);
 }
 
+/** The single forward step from `status`, or null at the end of the line. */
+export function nextStatus(status: string): BottleStatus | null {
+  return isBottleStatus(status) ? (TRANSITIONS[status][0] ?? null) : null;
+}
+
 export function assertTransition(from: string, to: BottleStatus): void {
   if (!canTransition(from, to)) throw new InvalidTransitionError(from, to);
 }

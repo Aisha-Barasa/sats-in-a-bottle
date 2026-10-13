@@ -12,14 +12,22 @@ import { bottleView, statusView } from "../serializers.js";
 export const bottlesRouter = Router();
 bottlesRouter.use(requireUser);
 
+export const MIN_BOTTLE_SATS = 1_000;
+export const OCCASIONS = ["birthday", "graduation", "wedding", "anniversary", "new_baby", "just_because", "other"] as const;
+// Base64url of an AES-GCM envelope holding the letter plus an optional voice note and photo.
+const MAX_CIPHERTEXT_CHARS = 8_000_000;
+export const MESSAGE_BODY_LIMIT = "9mb";
+
 const pubkeySchema = z.string().regex(/^0[23][0-9a-fA-F]{64}$/, "Compressed public key hex (02…/03…)");
 
 const createSchema = z.object({
   title: z.string().trim().min(1).max(120),
   recipientName: z.string().trim().min(1).max(80),
-  amountSats: z.number().int().min(1_000).max(2_100_000_000),
+  amountSats: z.number().int().min(MIN_BOTTLE_SATS).max(2_100_000_000),
   unlockAt: z.string().datetime({ offset: true }),
   recipientPubkey: pubkeySchema.optional(),
+  senderName: z.string().trim().min(1).max(80).optional(),
+  occasion: z.enum(OCCASIONS).optional(),
 });
 
 const updateSchema = z.object({ recipientPubkey: pubkeySchema });
@@ -27,7 +35,7 @@ const updateSchema = z.object({ recipientPubkey: pubkeySchema });
 const messageSchema = z.object({
   type: z.enum(["text", "voice", "photo"]),
   objectRef: z.string().min(1).max(500),
-  ciphertext: z.string().max(200_000).optional(),
+  ciphertext: z.string().max(MAX_CIPHERTEXT_CHARS).optional(),
   encryptionMeta: z
     .object({ alg: z.string().min(1).max(40), iv: z.string().min(1).max(200) })
     .passthrough()
@@ -84,6 +92,8 @@ bottlesRouter.post("/", async (req, res) => {
       amountSats: body.amountSats,
       unlockAt: new Date(body.unlockAt),
       recipientPubkey: body.recipientPubkey?.toLowerCase() ?? null,
+      senderName: body.senderName ?? null,
+      occasion: body.occasion ?? null,
       network: config.BITCOIN_NETWORK,
       events: { create: { type: "created" } },
     },
@@ -179,5 +189,5 @@ bottlesRouter.post("/:id/access", async (req, res) => {
   const token = generateToken();
   await prisma.recipientAccess.create({ data: { bottleId: bottle.id, tokenHash: hashToken(token) } });
   await prisma.event.create({ data: { bottleId: bottle.id, type: "access_issued" } });
-  res.status(201).json({ token, url: `${config.PUBLIC_APP_URL}/bottle/${token}` });
+  res.status(201).json({ token, url: `${config.PUBLIC_APP_URL}/open/${token}` });
 });

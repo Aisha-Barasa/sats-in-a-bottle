@@ -1,20 +1,9 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
-import { app, createFundableBottle, newSession } from "./helpers.js";
+import { app, createFundableBottle, FakeChain, newSession } from "./helpers.js";
 import { prisma } from "../src/db.js";
 import { runWatcherOnce } from "../src/chain/watcher.js";
-import type { AddressTx, ChainClient } from "../src/chain/mempool.js";
-
-class FakeChain implements ChainClient {
-  txs = new Map<string, AddressTx[]>();
-  tip = 100;
-  mtp = 0;
-  spent = new Set<string>();
-  async getAddressTxs(address: string) { return this.txs.get(address) ?? []; }
-  async getTipHeight() { return this.tip; }
-  async getMedianTimePast() { return this.mtp; }
-  async isOutputSpent(txid: string, vout: number) { return this.spent.has(`${txid}:${vout}`); }
-}
+import type { AddressTx } from "../src/chain/mempool.js";
 
 async function fundedSetup(amount = 100_000) {
   const token = await newSession();

@@ -33,6 +33,8 @@ export function bottleView(bottle: BottleWithRelations) {
     title: bottle.title,
     recipientName: bottle.recipientName,
     recipientPubkey: bottle.recipientPubkey,
+    senderName: bottle.senderName,
+    occasion: bottle.occasion,
     status: bottle.status,
     amountSats: bottle.amountSats,
     unlockAt: bottle.unlockAt.toISOString(),
