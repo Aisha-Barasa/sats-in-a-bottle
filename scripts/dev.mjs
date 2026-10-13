@@ -3,7 +3,7 @@ import { spawn } from "node:child_process";
 
 const npm = process.platform === "win32" ? "npm.cmd" : "npm";
 const procs = [
-  ["web", [npm, ["run", "dev"]], "\x1b[35m"],
+  ["web", [npm, ["--prefix", "web", "run", "dev"]], "\x1b[35m"],
   ["api", [npm, ["--prefix", "server", "run", "dev"]], "\x1b[36m"],
 ].map(([name, [cmd, args], color]) => {
   const child = spawn(cmd, args, { stdio: ["ignore", "pipe", "pipe"], env: process.env });
