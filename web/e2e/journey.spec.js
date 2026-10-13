@@ -45,7 +45,7 @@ function collectErrors(page) {
 test('landing page shows the 3D bottle and links into the app', async ({ page }) => {
   const errors = collectErrors(page);
   await page.goto('/');
-  await expect(page.getByText('Not just')).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: /Send money/ })).toBeVisible();
   await expect(page.locator('canvas').first()).toBeAttached();
   await page.getByRole('button', { name: 'Skip' }).click().catch(() => {});
   await expect(page.getByRole('link', { name: /I received a bottle/ }).first()).toHaveAttribute('href', '/find');

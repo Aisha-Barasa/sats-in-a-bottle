@@ -9,14 +9,14 @@ const INTRO_MS = 5200;                  // first play, scroll locked
 const LOOP = { hold: 1400, open: 2000, rest: 1300, fade: 350, build: 4200 }; // then it repeats
 
 const TRIO = [
-  ['Message', 'A letter, a voice note or a photo. Encrypted until it opens.', ['#d1ffca', '#fff', '#000']],
-  ['Amount', 'From a few hundred shillings. M-Pesa or bitcoin.', ['#fff100', '#fff', '#000']],
-  ['Date', 'A birthday, a graduation, a day you choose.', ['#fff', '#d1ffca', '#fff100']],
+  ['Message', 'A letter, a voice note or a photo. Only they can see it, and only on the day.', ['#d1ffca', '#fff', '#000']],
+  ['Amount', 'Start with a few hundred shillings. Pay with M-Pesa or bitcoin.', ['#fff100', '#fff', '#000']],
+  ['Date', 'A birthday, a graduation, or any day you choose.', ['#fff', '#d1ffca', '#fff100']],
 ];
 const IDEAS = [
-  ['Birthdays', 'Write it now. It opens on the day.', 'cake'],
-  ['Graduation', 'Open it the day they walk the stage.', 'cap'],
-  ['New baby', 'A first deposit they can claim at 18.', 'baby'],
+  ['Birthdays', 'Write it now. They open it on the day.', 'cake'],
+  ['Graduation', 'Ready for the day they finish school.', 'cap'],
+  ['New baby', 'A gift they can open when they turn 18.', 'baby'],
 ];
 
 export default function Landing() {
@@ -83,9 +83,9 @@ export default function Landing() {
         </div>
         <div className="hero-copy">
           <h1 className="h-hero">
-            <span>Not just</span><span>a transfer.</span><span>A bottle with</span><span>a date on it.</span>
+            <span>Send money</span><span>and a message</span><span>that opens on</span><span>a day you pick.</span>
           </h1>
-          <p className="hero-p">Pay in shillings with M-Pesa, add a message, pick the day. Bitcoin keeps it sealed until then, and they claim it to their own wallet.</p>
+          <p className="hero-p">Write a letter or record a voice note, add money with M-Pesa, and choose the day. Until then, nobody can open it or spend the money. Not even you.</p>
         </div>
         {!done && <button className="skip-link" onClick={() => skipRef.current()}>Skip</button>}
       </section>
@@ -93,13 +93,13 @@ export default function Landing() {
       <section className="dk arc" id="how" data-dark>
         <div className="wrap" ref={r1}>
           <div className="cols3 reveal">
-            {[['Lock.', 'Top up with M-Pesa or send bitcoin. A Bitcoin timelock holds the sats until the day.'],
-              ['Wait.', 'The message stays hidden from everyone, the recipient included, until the day.'],
-              ['Claim.', 'They open your link, read your message and claim the sats to their own wallet.']].map(([t, d]) => (
+            {[['Write.', 'Write a letter or record a voice note. Choose who it is for and the day it opens.'],
+              ['Lock.', 'Add money with M-Pesa or bitcoin. It stays locked in the bottle until that day.'],
+              ['Open.', 'On the day, they read your message and move the money to their own wallet.']].map(([t, d]) => (
               <div key={t}><h2 className="h-col">{t}</h2><p className="p-dk">{d}</p></div>))}
           </div>
-          <h2 className="h-statement reveal">Sats that stay put until the day.</h2>
-          <div className="p-stack reveal"><p>You pick the amount, the date and the words.</p><p>After you seal it, none of it can be changed.</p><p>Built first for Kenyans abroad who already send money home and want to send more than money.</p></div>
+          <h2 className="h-statement reveal">Money that waits for the right day.</h2>
+          <div className="p-stack reveal"><p>You choose the amount, the day and the words.</p><p>Once it is sealed, nothing can be changed or taken out early.</p><p>Made for Kenyans abroad who send money home and want to send a moment with it.</p></div>
         </div>
       </section>
 
@@ -114,25 +114,25 @@ export default function Landing() {
 
       <section className="dk" id="security" data-dark>
         <div className="wrap" ref={r3}>
-          <h2 className="h-statement reveal">Built to be trusted.</h2>
+          <h2 className="h-statement reveal">Why you can trust it.</h2>
           <div className="cols3 reveal">
-            {[['Encrypted.', 'Your message is encrypted on your device. The key lives only in the link you share.'],
-              ['Locked.', 'The date is enforced by Bitcoin itself, not by our server. Nobody can open it early.'],
-              ['Yours.', 'We never hold the sats or the keys. You can check the lock on any block explorer.']].map(([t, d]) => (
+            {[['Private.', 'Your message is locked on your device before it is sent. We cannot read it.'],
+              ['Locked.', 'Bitcoin itself keeps the date, not us. Nobody can open it early.'],
+              ['Yours.', 'We never hold the money. It goes from the bottle straight to their wallet.']].map(([t, d]) => (
               <div key={t}><h2 className="h-col">{t}</h2><p className="p-dk">{d}</p></div>))}
           </div>
-          <p className="p-dk fine reveal">Whoever holds the share link can claim once it opens, so send it privately. There is no undo after you fund it.</p>
+          <p className="p-dk fine reveal">Anyone with the link can open the bottle on the day, so send it only to them. Once you add money, it cannot be undone.</p>
         </div>
       </section>
 
       <section className="wh arc" id="ideas">
         <div className="wrap" ref={r4}>
           <h2 className="h-sub reveal">Ideas for your first bottle.</h2>
-          <p className="p-gray reveal">Pick a reason, set a date, send.</p>
+          <p className="p-gray reveal">Pick a reason, choose a day, send it.</p>
           <div className="feature reveal">
             <div className="feature-copy">
               <h3 className="h-feature">Birthdays that arrive on time.</h3>
-              <p>Write it now. It opens on the day, not before.</p>
+              <p>Write it today. They open it on their birthday, not a day before.</p>
               <Link to="/create" className="btn-dark-sm">Create one</Link>
             </div>
             <div className="feature-art"><Blocks model="cake" size={270} /></div>
@@ -152,8 +152,8 @@ export default function Landing() {
       </section>
 
       <section className="split">
-        <Link to="/create" className="split-half"><h2 className="h-split">Create<br />a bottle</h2><span className="arrow-box" aria-hidden="true">↗</span><p>About two minutes.</p></Link>
-        <Link to="/find" className="split-half"><h2 className="h-split">I got<br />a bottle</h2><span className="arrow-box" aria-hidden="true">↗</span><p>Open the link you were sent.</p></Link>
+        <Link to="/create" className="split-half"><h2 className="h-split">Create<br />a bottle</h2><span className="arrow-box" aria-hidden="true">↗</span><p>Takes about two minutes.</p></Link>
+        <Link to="/find" className="split-half"><h2 className="h-split">I received<br />a bottle</h2><span className="arrow-box" aria-hidden="true">↗</span><p>Open the link someone sent you.</p></Link>
       </section>
       <Footer />
     </>
