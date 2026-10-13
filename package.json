@@ -16,6 +16,7 @@
     "build": "npm --prefix web run build && npm --prefix server run build",
     "test": "npm --prefix server test",
     "typecheck": "npm --prefix server run typecheck",
-    "lint": "npm --prefix web run lint"
+    "lint": "npm --prefix web run lint",
+    "test:e2e": "npm --prefix web run test:e2e"
   }
 }

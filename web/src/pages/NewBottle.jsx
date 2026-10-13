@@ -48,7 +48,8 @@ export default function NewBottle() {
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
   const at = useMemo(() => (f.at ? new Date(f.at) : null), [f.at]);
   const kes = Number(f.kes);
-  const { quote, error: quoteError } = useKesQuote(useKes && step === 3 && Number.isInteger(kes) && kes >= 10 && kes <= 10_000 ? kes : 0, useKes);
+  // Not tied to the current step: the Seal step needs the same quote the Amount step showed.
+  const { quote, error: quoteError } = useKesQuote(useKes && Number.isInteger(kes) && kes >= 10 && kes <= 10_000 ? kes : 0, useKes);
   const sats = useKes ? quote?.sats ?? 0 : Number(f.sats);
   const minSats = config?.limits?.minSats ?? 1000;
 
@@ -63,7 +64,7 @@ export default function NewBottle() {
       if (!at || isNaN(at)) return 'Pick the day it opens';
       if (at.getTime() < Date.now() + MIN_LEAD_MS) return 'Pick a time at least 10 minutes from now';
     }
-    if (step === 3) {
+    if (step >= 3) {
       if (useKes) {
         if (!Number.isInteger(kes) || kes < 10 || kes > 10_000) return 'M-Pesa top-ups are KES 10 to 10,000';
         if (!quote) return quoteError || 'Getting the rate…';
@@ -182,6 +183,7 @@ export default function NewBottle() {
             </div>
             <div className="stack-sm"><span className="mono muted">MESSAGE</span><div className="letter" style={{ fontSize: 16, padding: 20, maxHeight: 220, overflow: 'auto' }}>{f.message || '(no letter)'}</div>
               <div className="row wrap-r">{voice && <span className="tag">Voice note</span>}{photo && <span className="tag">Photo</span>}</div></div>
+            <p className="help">Next you fund it: pay with M-Pesa or send bitcoin from a wallet. The bottle locks once the payment confirms.</p>
             <div className="callout warn">Once it’s funded, nobody can move these sats before the date, not even you. There is no undo.</div>
             <label className="check"><input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)} /><span>I understand. Seal it.</span></label>
           </>}
@@ -191,7 +193,7 @@ export default function NewBottle() {
             <button className="btn btn-ghost" disabled={busy} onClick={() => { setError(null); step ? setStep(step - 1) : nav(-1); }}>Back</button>
             {step < 4
               ? <button className="btn btn-dark" disabled={busy} onClick={next}>{busy ? <Spinner /> : 'Continue'}</button>
-              : <button className="btn btn-dark" onClick={seal} disabled={busy || !ack}>{busy ? <Spinner /> : 'Seal bottle'}</button>}
+              : <button className="btn btn-dark" onClick={seal} disabled={busy || !ack}>{busy ? <Spinner /> : 'Seal and fund'}</button>}
           </div>
         </div>
       </div>

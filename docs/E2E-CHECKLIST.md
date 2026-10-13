@@ -1,97 +1,86 @@
 # End-to-end test checklist (Bitika test key, signet)
 
-Runs the whole product locally against the Bitika **sandbox** and Bitcoin **signet**. No real money moves.
+The automated suites cover the logic: `npm test` (server), `npm run test:e2e` (browser, demo mode) and
+`npm --prefix server run test:regtest` (claim on a real Bitcoin node). This checklist covers what they can't:
+the real Bitika sandbox, real signet coins and a real claim. No real money moves.
 
-> The Bitika sandbox simulates M-Pesa and Lightning; it does not send real sats. Fund the bottle on-chain
-> with signet coins from a faucet. In live mode the same flow uses the real Lightning payout instead.
+> The Bitika sandbox simulates M-Pesa and Lightning and sends no real sats. Fund the bottle on-chain with signet
+> coins from a faucet. In live mode the same flow uses the real Lightning payout.
 
 ## 0. Setup
 
-- [ ] Node.js ≥ 20 installed.
+- [ ] Node.js 20.19 or newer.
 - [ ] `cp server/.env.example server/.env` and set:
-  - `FUNDING_PROVIDER=bitika`
-  - `BITIKA_ENV=test`
-  - `BITIKA_API_KEY=bk_test_…` (your sandbox key)
+  - `FUNDING_PROVIDER=bitika`, `BITIKA_ENV=test`, `BITIKA_API_KEY=bk_test_…` (your sandbox key)
   - `BITCOIN_NETWORK=signet`
-- [ ] `cp .env.example .env` (frontend; defaults to `VITE_API_URL=http://localhost:4000`).
-- [ ] `npm run setup` (installs both apps and creates the SQLite database `server/dev.db`).
-- [ ] `npm run test:server` → all tests pass.
-- [ ] `npm run dev:all` → `[api] server listening on :4000 (signet, funding: bitika (test))` and `[web]` Vite on :5173.
-- [ ] `curl localhost:4000/health` → `"fundingProvider":{"name":"bitika","env":"test"}`.
+  - `DEV_TOOLS=false` (this run uses the real chain)
+- [ ] `npm run setup` installs both apps and creates `server/dev.db`.
+- [ ] `npm test` and `npm run lint` pass.
+- [ ] `npm run dev` shows `[api] server listening on :4000 (signet, funding: bitika (test))` and `[web]` on :5173.
+- [ ] `curl localhost:5173/api/health` shows `"fundingProvider":{"name":"bitika","env":"test"}`.
 - [ ] The API key does not appear anywhere in the terminal output.
 
-## 1. Recipient key
+## 1. Create a bottle
 
-The recipient needs a signet wallet that can show a raw public key and later spend a custom script
-(e.g. Sparrow on signet, or `bitcoin-cli -signet getaddressinfo <addr>` → `pubkey`).
+- [ ] Open http://localhost:5173 and click **Create a bottle**.
+- [ ] Their name and your name, then Continue. (Leave "They already have a Bitcoin wallet" closed to use a gift key.)
+- [ ] Write a letter; optionally record a voice note and add a photo.
+- [ ] Pick an occasion and a date. For a quick run, set it about an hour ahead.
+- [ ] Amount in shillings: KES 500 shows a live Bitika rate in sats. Below 10 or above 10,000 is refused.
+- [ ] Tick the confirmation and **Seal bottle**. You land on `/b/<id>` with status **Awaiting funds**.
 
-- [ ] Copy a compressed public key (66 hex chars starting `02` or `03`).
+## 2. M-Pesa top-up (Bitika sandbox)
 
-## 2. Create a bottle
+On the bottle page, **M-Pesa** tab:
 
-- [ ] Open http://localhost:5173/create.
-- [ ] Recipient name, title, recipient public key → Continue. A bad key shows an inline error.
-- [ ] Write a message → Continue.
-- [ ] Amount (e.g. 10,000 sats) and an unlock date → Continue → **Seal bottle**.
-- [ ] Redirected to `/bottle/<id>`; status **Awaiting funding**; a `tb1q…` address and QR are shown.
-- [ ] The address matches `GET /api/bottles/<id>/funding` (needs your session token from `localStorage["sib.session"]`).
+- [ ] **Get quote** shows sats and whether they cover the bottle.
+- [ ] Success: phone `0712345678`, any Lightning address (`name@domain`), **Send M-Pesa prompt**.
+  - [ ] An `SBX-…` code appears, then *fulfilled* with "Now send from your Lightning wallet to" the bottle address.
+  - [ ] The bottle is **still Awaiting funds**. Only an on-chain payment funds it.
+- [ ] Declined: a phone ending `000001` (`0700000001`) ends in *failed*; **Try again** resets the form.
+- [ ] Payout failure: a phone ending `000002` (`0700000002`) ends in *payment_failed* with the support message.
+- [ ] `npm --prefix server run db:studio`: `Event` rows carry the `SBX-…` code in `providerRef`, the phone is masked,
+      and `BitcoinLock.providerRef` is set.
 
-Tip: to reach the unlock quickly, pick tomorrow's date (bottles unlock at 12:00 local time on that day). Chain time (median time past) runs about an hour behind wall-clock time.
+## 3. Webhooks (optional; polling covers it)
 
-## 3. M-Pesa top-up (Bitika sandbox)
+- [ ] `ngrok http 4000`, then register `https://<id>.ngrok-free.app/api/webhooks/bitika` as described in the
+      Webhooks section of https://bitika.xyz/developers/docs.
+- [ ] Put the secret it shows once into `server/.env` as `BITIKA_WEBHOOK_SECRET` and restart. The warning is gone.
+- [ ] A new sandbox payment adds `funding_provider_update` events with source `webhook`.
+- [ ] `curl -X POST localhost:4000/api/webhooks/bitika -d '{}'` returns `401 Invalid signature`.
 
-In the bottle's funding panel:
+## 4. Fund on-chain (signet)
 
-- [ ] Enter KES 500 → **Get quote** → shows sats you'd receive and whether it covers the bottle.
-- [ ] Amount below 10 or above 10,000 → validation error.
-- [ ] **Success path**: phone `0712345678`, Lightning address (any valid `name@domain`) → **Pay with M-Pesa**.
-  - [ ] An `SBX-…` transaction code is shown with status *processing*.
-  - [ ] Status moves to *fulfilled* (polled every 4s) with "send them on-chain to the bottle address".
-  - [ ] Bottle status is **still Awaiting funding** (Bitika never marks a bottle funded).
-- [ ] **Declined path**: phone ending `000001` (e.g. `0700000001`) → ends in *failed*; **Try again** resets the form.
-- [ ] **Payout failure path**: phone ending `000002` (e.g. `0700000002`) → ends in *payment_failed* with the Bitika support message.
-- [ ] Check stored references: `npm --prefix server run db:studio` → `Event` rows `funding_initiated` /
-      `funding_provider_update` carry the `SBX-…` code in `providerRef`; phone is masked; `BitcoinLock.providerRef` is set.
+- [ ] Get signet coins from a faucet (for example https://signetfaucet.com) into a signet wallet.
+- [ ] **Bitcoin wallet** tab: scan the QR or copy the address and send the bottle amount.
+- [ ] Within about 30 seconds the bottle shows **Funded** with a mempool.space link.
+- [ ] After one confirmation it shows **Sealed** with a countdown and the share panel.
+- [ ] **Verify it yourself** shows the address, locktime and witness script.
 
-## 4. Webhooks (optional; polling covers it otherwise)
+## 5. Share and wait
 
-- [ ] Expose the API: `ngrok http 4000` → `https://<id>.ngrok-free.app`.
-- [ ] Register `https://<id>.ngrok-free.app/api/webhooks/bitika` with Bitika as described in the
-      Webhooks section of https://bitika.xyz/developers/docs (needs your developer login).
-- [ ] Put the secret it shows once into `server/.env` as `BITIKA_WEBHOOK_SECRET`, restart `npm run dev:all`.
-      The "BITIKA_WEBHOOK_SECRET not set" warning is gone.
-- [ ] Repeat a sandbox payment; Bitika's delivery log shows `200` responses and new `funding_provider_update` events appear with source `webhook`.
-- [ ] Negative check: `curl -X POST localhost:4000/api/webhooks/bitika -d '{}'` → `401 Invalid signature`.
+- [ ] Copy the share link. It ends in `#k=…&g=…`.
+- [ ] Open it in a private window (the recipient): from your name, the countdown and amount; no message.
+- [ ] **Find a bottle** with the pasted link reaches the same page.
+- [ ] The link without its `#…` part says the key is missing. An edited token says "Link not found".
+- [ ] When the countdown reaches zero, the page explains Bitcoin's clock lag, then shows **Ready** once median
+      time past passes the locktime (the watcher checks every 30 seconds).
 
-## 5. Fund on-chain (signet)
+## 6. Open and claim
 
-- [ ] Get signet coins from a faucet (e.g. https://signetfaucet.com) into a signet wallet.
-- [ ] Send at least the bottle amount to the bottle address (or scan the QR / BIP21).
-- [ ] Within ~30s the bottle shows **Funded**, with a mempool.space signet link to the transaction.
-- [ ] After 1 confirmation (`MIN_CONFIRMATIONS`) it shows **Sealed**.
-- [ ] Sending a different amount records a `funding_amount_mismatch` event (still funds the lock).
+- [ ] **Open the bottle**: the letter, photo and voice note appear and match what was sent.
+- [ ] **Claim your sats**: paste a signet address you own (`tb1…`), check the amount after the network fee, tick
+      the box, **Claim sats**.
+- [ ] A transaction id appears with a mempool.space link, and the wallet receives the sats once it confirms.
+- [ ] The sender's page then shows **Claimed**, and a second claim attempt is refused.
 
-## 6. Share and unlock
+## 7. Dashboards
 
-- [ ] On the sender's bottle page, copy the share link. It ends in `#k=…`.
-- [ ] Open it in a private window (the recipient). Title, amount and countdown show; **no message** and no funding panel.
-- [ ] An edited or truncated link shows "invalid or expired".
-- [ ] After the unlock date and chain median time pass it, status becomes **Unlockable** (watcher polls every 30s).
-- [ ] Recipient clicks **Open bottle** → message decrypts in the browser and matches what was written.
-- [ ] The reveal screen shows the outpoint (txid:vout), witness script and nLockTime needed to claim.
-- [ ] The same link without the `#k=` fragment can't decrypt the message.
-
-## 7. Claim
-
-- [ ] In the recipient's wallet, spend the P2WSH output with the witness script, `nLockTime ≥ locktime`
-      and `nSequence < 0xffffffff`, signed with the recipient key.
-- [ ] Once the spend is seen, the bottle shows **Claimed**.
-
-## 8. Dashboard
-
-- [ ] http://localhost:5173/dashboard lists the bottle with its current status.
+- [ ] http://localhost:5173/home lists the bottle under My bottles with the sats locked total.
+- [ ] In the recipient's window, **Bottles → Received** lists it.
 
 ## Switching to live (later)
 
 Config only: `BITIKA_ENV=live`, a `bk_live_…` key, `BITCOIN_NETWORK=mainnet`. The server refuses to start if
-these don't match.
+these don't match, or if `DEV_TOOLS=true` on mainnet.

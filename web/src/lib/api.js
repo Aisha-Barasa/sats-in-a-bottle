@@ -3,7 +3,8 @@ const SESSION_KEY = 'sib.session';
 
 export class ApiError extends Error {
   constructor(status, body) {
-    super(body?.error || 'Request failed');
+    const field = body?.details && typeof body.details === 'object' ? Object.entries(body.details).find(([, v]) => Array.isArray(v) && v.length) : null;
+    super(field ? `${body.error}: ${field[0]} ${String(field[1][0]).toLowerCase()}` : body?.error || 'Request failed');
     this.status = status;
     this.body = body;
   }

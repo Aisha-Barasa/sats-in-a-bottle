@@ -40,3 +40,7 @@ server/prisma/sqlite/
 
 # Legacy prototype data
 bottles.db
+
+# Playwright
+web/test-results/
+web/playwright-report/
