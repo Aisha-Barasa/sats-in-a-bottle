@@ -1,14 +1,43 @@
-# Sats in a Bottle
+<div align="center">
 
-**A message to the future, sealed with Bitcoin.**
+# 🍾 Sats in a Bottle
 
-Write a letter or record a voice note, attach some bitcoin, and seal it until a birthday, a graduation or any day
-that matters. Built first for Kenyans abroad who already send money home and want to send more than money.
+### A message to the future, sealed with Bitcoin.
 
-Nobody can open the bottle early, not even the sender, and not us. The date is enforced by a Bitcoin timelock,
-and the message is encrypted in the sender's browser.
+Record a voice note or write a letter, attach some Bitcoin, and seal it until a birthday, a graduation or any day
+that matters. Built first for Kenyans abroad sending money *and* meaning home.
+
+![Status](https://img.shields.io/badge/status-MVP-orange?style=flat-square)
+![Frontend](https://img.shields.io/badge/frontend-React_%2B_three.js-61dafb?style=flat-square&logo=react&logoColor=black)
+![Backend](https://img.shields.io/badge/backend-Express_%2B_Prisma-003b57?style=flat-square&logo=express&logoColor=white)
+![Bitcoin](https://img.shields.io/badge/bitcoin-CLTV_timelock_on_signet-f7931a?style=flat-square&logo=bitcoin&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-brightgreen?style=flat-square)
+
+[Overview](#overview) · [The journey](#the-journey) · [How it works](#how-it-works) · [Quick start](#quick-start) ·
+[Testing](#testing) · [Known limits](#known-limits) · [Roadmap](#roadmap) · [Team](#team) · [License](#license)
 
 A Dada Devs capstone project.
+
+</div>
+
+---
+
+## Overview
+
+Sending money home is routine. Sending a *moment* usually isn't: a voice note for a niece's 18th birthday, or a
+letter for a graduation you'll miss. There's no simple way to attach meaning to a transfer and have it land exactly
+when it matters.
+
+**Sats in a Bottle** fixes that. Record a message, attach Bitcoin, pick a date. The bottle stays sealed until then.
+On the day, the recipient hears the message and claims the funds.
+
+| | |
+|---|---|
+| 🎙️ **Record or write** | A voice note, a letter and a photo, for someone specific |
+| ₿ **Attach Bitcoin** | Paid in shillings with M-Pesa, or from any Bitcoin wallet |
+| 📅 **Pick a date** | A birthday, graduation, wedding or any day that matters |
+| 🔒 **Nobody opens it early** | Not the recipient, not the sender, not us. A Bitcoin timelock enforces the date |
+| 🔓 **Opens on the day** | The message decrypts in the recipient's browser and they claim the sats to their wallet |
 
 ---
 
@@ -31,6 +60,8 @@ Create → Message → Date → Amount → Seal → Fund → Share → Wait → 
 1. Opens the link, or pastes it into **I received a bottle**, and sees who it's from and a countdown.
 2. On the day, opens the bottle. The letter, photo and voice note decrypt in their browser.
 3. Claims the sats to any Bitcoin address. The browser signs with the gift key; no wallet is needed until then.
+
+---
 
 ## How it works
 
@@ -55,7 +86,22 @@ Create → Message → Date → Amount → Seal → Fund → Share → Wait → 
 - **The server never holds private keys or message keys.** It stores ciphertext, public keys and hashed access
   tokens.
 
-## Run it
+### Repository layout
+
+| Path | What |
+| --- | --- |
+| `web/` | React + Vite app. `src/pages/` screens, `src/lib/crypto.js` encryption and gift keys, `src/lib/bottleScene.js` the 3D bottle |
+| `web/e2e/` | Playwright browser tests |
+| `server/` | Express + TypeScript API, Prisma, the chain watcher and Bitika |
+| `server/src/bitcoin/` | CLTV lock, locktime rules and the claim transaction |
+| `server/prisma/schema.prisma` | Data model: User, Bottle, Message, BitcoinLock, RecipientAccess, Event, Notification |
+| `docs/API.md` | Endpoint reference |
+| `docs/DESIGN-SYSTEM.md` | Colours, type, components and motion |
+| `docs/PRODUCT-SPEC.md` | The original product specification |
+
+---
+
+## Quick start
 
 Needs Node.js 20.19 or newer.
 
@@ -67,9 +113,14 @@ npm run setup                        # installs web + server, creates the SQLite
 npm run dev                          # web on http://localhost:5173, API on :4000
 ```
 
-**Demo mode.** Set `DEV_TOOLS=true` in `server/.env` to get "Demo: skip ahead" buttons, so you can walk the whole
-journey in a few minutes without waiting for blocks. No coins move, so a skipped bottle can be opened but has
-nothing to claim. The server refuses demo mode in production and on mainnet.
+> [!TIP]
+> **Demo mode.** Set `DEV_TOOLS=true` in `server/.env` to get "Demo: skip ahead" buttons, so you can walk the whole
+> journey in a few minutes without waiting for blocks. No coins move, so a skipped bottle can be opened but has
+> nothing to claim. The server refuses demo mode in production and on mainnet.
+
+> [!NOTE]
+> Recording a voice note needs the page served over `http://localhost` or `https://`. Browsers block the
+> microphone elsewhere. Writing a letter always works.
 
 **M-Pesa.** Set `FUNDING_PROVIDER=bitika`, `BITIKA_ENV=test` and your `BITIKA_API_KEY=bk_test_…`. Switching to live is
 config only (`BITIKA_ENV=live`, a `bk_live_…` key, `BITCOIN_NETWORK=mainnet`).
@@ -87,6 +138,8 @@ config only (`BITIKA_ENV=live`, a `bk_live_…` key, `BITCOIN_NETWORK=mainnet`).
 | `npm run build` | Production builds of both |
 | `npm --prefix server run test:regtest` | Lock and claim on a real Bitcoin Core node (needs `BITCOIN_BIN`) |
 
+---
+
 ## Testing
 
 - **Server (Vitest, 66 tests):** state machine, locktimes, CLTV scripts, claim transactions and signatures, the REST
@@ -100,31 +153,43 @@ config only (`BITIKA_ENV=live`, a `bk_live_…` key, `BITCOIN_NETWORK=mainnet`).
 - **CI:** [.github/workflows/ci.yml](.github/workflows/ci.yml) runs all of the automated suites on every push and
   pull request.
 
-## Project layout
-
-| Path | What |
-| --- | --- |
-| `web/` | React + Vite app. `src/pages/` screens, `src/lib/crypto.js` encryption and gift keys, `src/lib/bottleScene.js` the 3D bottle |
-| `web/e2e/` | Playwright browser tests |
-| `server/` | Express + TypeScript API, Prisma, the chain watcher and Bitika |
-| `server/src/bitcoin/` | CLTV lock, locktime rules and the claim transaction |
-| `server/prisma/schema.prisma` | Data model: User, Bottle, Message, BitcoinLock, RecipientAccess, Event, Notification |
-| `docs/API.md` | Endpoint reference |
-| `docs/DESIGN-SYSTEM.md` | Colours, type, components and motion |
-| `docs/PRODUCT-SPEC.md` | The original product specification |
+---
 
 ## Known limits
 
-- **The share link is the key.** Anyone holding it can claim once the bottle opens, so send it privately. The
-  sender's browser made the gift key, so the sender could also claim it; recipients who need to rule that out
-  should give the sender their own public key ("They already have a Bitcoin wallet").
-- **No undo.** Once funded, nothing moves before the date. There is no sender refund path in the script yet; that
-  needs designing before mainnet.
-- **Sessions live in the browser.** A sender's bottles and share links are tied to the browser that sealed them.
-- **M-Pesa is one way and two steps.** Bitika pays out over Lightning only, so the sender forwards the sats on-chain.
-  There is no M-Pesa cash-out for recipients yet; they claim to a Bitcoin wallet or exchange.
-- **No notifications yet.** The data model has them, but no SMS or email provider is connected.
-- **Tested on signet only.**
+| Limit | Why | Upgrade path |
+|---|---|---|
+| **The share link is the key** | Anyone holding it can claim once the bottle opens, including the sender, whose browser made the gift key | Recipients who need to rule that out give the sender their own public key ("They already have a Bitcoin wallet") |
+| **No undo** | Once funded, nothing moves before the date | A sender refund path in the script, designed before mainnet |
+| **Sessions live in the browser** | No passwords: a sender's bottles and share links are tied to the browser that sealed them | Optional accounts or a recovery code |
+| **M-Pesa is one way and two steps** | Bitika pays out over Lightning only, so the sender forwards the sats on-chain | Direct on-chain funding from the provider, and an M-Pesa cash-out for recipients |
+| **No notifications yet** | The data model has them, but no SMS or email provider is connected | Connect an SMS provider such as Africa's Talking |
+| **Signet only** | Test money while the product is validated | Mainnet after the refund path and a small controlled test |
+
+---
+
+## Roadmap
+
+- [x] Real CLTV timelocking, on-chain
+- [x] Wire the frontend to the backend API
+- [x] Claim in the recipient's browser, with no private keys on the server
+- [ ] Sender refund path
+- [ ] SMS or email notifications on the day
+- [ ] Direct M-Pesa cash-out for recipients
+- [ ] Multi-recipient "inheritance bottles"
+- [ ] Video notes, alongside voice notes and letters
+
+---
+
+## Contributing
+
+Issues, ideas and pull requests are welcome. If you're picking this up:
+
+1. Create a feature branch from `main`.
+2. Run `npm test`, `npm run lint` and `npm run typecheck` before you push. CI runs them and the browser tests too.
+3. Open a PR describing what changed and why.
+
+---
 
 ## Team
 
@@ -136,9 +201,20 @@ This repo brings together three earlier repos:
 - **Linnette** ([@linnnetteseven](https://github.com/linnnetteseven)): the backend, the Bitcoin timelock and claim,
   the Bitika integration and bringing it together.
 - **Florence Makaa** ([@Floramuna](https://github.com/Floramuna)): the product specification and the first frontend.
+- **Jael Wainaina** ([@Jael2424](https://github.com/Jael2424)): the README's structure and presentation.
 
 Everyone's commits are kept in the history.
 
 ---
 
-**More than money. It's a legacy.**
+## License
+
+MIT. See [`LICENSE`](LICENSE).
+
+---
+
+<div align="center">
+
+**More than money. It's a legacy.** 🍾
+
+</div>
