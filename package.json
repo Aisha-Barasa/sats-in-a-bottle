@@ -1,0 +1,22 @@
+{
+  "name": "sats-in-a-bottle",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "A message to the future, sealed with Bitcoin. Money with a message, locked until it matters.",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "setup": "npm --prefix web install && npm --prefix server install && npm --prefix server run db:push",
+    "dev": "node scripts/dev.mjs",
+    "dev:web": "npm --prefix web run dev",
+    "dev:server": "npm --prefix server run dev",
+    "build": "npm --prefix web run build && npm --prefix server run build",
+    "test": "npm --prefix server test",
+    "typecheck": "npm --prefix server run typecheck",
+    "lint": "npm --prefix web run lint",
+    "test:e2e": "npm --prefix web run test:e2e"
+  }
+}

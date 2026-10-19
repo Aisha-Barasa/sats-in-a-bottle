@@ -1,0 +1,41 @@
+{
+  "name": "sats-in-a-bottle-server",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "dev": "node scripts/prisma.mjs generate && tsx watch src/index.ts",
+    "build": "node scripts/prisma.mjs generate && tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:regtest": "tsx scripts/regtest-claim.ts",
+    "db:generate": "node scripts/prisma.mjs generate",
+    "db:push": "node scripts/prisma.mjs db push",
+    "db:studio": "node scripts/prisma.mjs studio"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "bitcoinjs-lib": "^6.1.7",
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "express": "^5.2.1",
+    "tiny-secp256k1": "^2.2.4",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.20.5",
+    "@types/supertest": "^7.2.1",
+    "bech32": "^2.0.0",
+    "prisma": "^6.19.3",
+    "supertest": "^7.3.1",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.9"
+  }
+}

@@ -1,0 +1,120 @@
+// Source of truth for the data model (README section 8).
+// scripts/prisma.mjs derives prisma/sqlite/schema.prisma from this file when
+// DATABASE_URL points at a SQLite file, so keep types portable: no native
+// enums or Json columns. Status and metadata are validated in application code.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  displayName String
+  identifier  String?  @unique
+  walletRef   String?
+  // SHA-256 of the bearer token handed to the browser; the token itself is never stored.
+  tokenHash   String   @unique
+  createdAt   DateTime @default(now())
+  bottles     Bottle[]
+}
+
+model Bottle {
+  id              String            @id @default(cuid())
+  ownerId         String
+  owner           User              @relation(fields: [ownerId], references: [id])
+  recipientName   String
+  recipientPubkey String?
+  // Shown to the recipient ("from Njoki") and on the share page.
+  senderName      String?
+  // birthday | graduation | wedding | anniversary | new_baby | just_because | other
+  occasion        String?
+  title           String
+  // draft | awaiting_funding | funded | sealed | unlockable | claimed (see src/domain/bottleStateMachine.ts)
+  status          String            @default("draft")
+  amountSats      Int
+  unlockAt        DateTime
+  network         String
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  message         Message?
+  lock            BitcoinLock?
+  accesses        RecipientAccess[]
+  events          Event[]
+  notifications   Notification[]
+
+  @@index([ownerId])
+  @@index([status])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  bottleId       String   @unique
+  bottle         Bottle   @relation(fields: [bottleId], references: [id], onDelete: Cascade)
+  type           String
+  // Pointer to the encrypted object (e.g. "inline", or an object-store key).
+  objectRef      String
+  // Inline ciphertext for small text messages; encrypted client-side.
+  ciphertext     String?
+  // JSON: { alg, iv, ... }. Never contains the decryption key.
+  encryptionMeta String
+  createdAt      DateTime @default(now())
+}
+
+model BitcoinLock {
+  id              String   @id @default(cuid())
+  bottleId        String   @unique
+  bottle          Bottle   @relation(fields: [bottleId], references: [id], onDelete: Cascade)
+  network         String
+  address         String   @unique
+  witnessScript   String
+  locktime        Int
+  recipientPubkey String
+  txid            String?
+  vout            Int?
+  amountSats      Int?
+  confirmations   Int      @default(0)
+  fundingProvider String?
+  providerRef     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model RecipientAccess {
+  id         String    @id @default(cuid())
+  bottleId   String
+  bottle     Bottle    @relation(fields: [bottleId], references: [id], onDelete: Cascade)
+  tokenHash  String    @unique
+  createdAt  DateTime  @default(now())
+  redeemedAt DateTime?
+
+  @@index([bottleId])
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  bottleId    String
+  bottle      Bottle   @relation(fields: [bottleId], references: [id], onDelete: Cascade)
+  type        String
+  providerRef String?
+  metadata    String   @default("{}")
+  createdAt   DateTime @default(now())
+
+  @@index([bottleId])
+  @@index([providerRef])
+}
+
+model Notification {
+  id          String    @id @default(cuid())
+  bottleId    String
+  bottle      Bottle    @relation(fields: [bottleId], references: [id], onDelete: Cascade)
+  type        String
+  scheduledAt DateTime
+  sentAt      DateTime?
+
+  @@index([bottleId])
+}
