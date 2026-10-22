@@ -360,7 +360,7 @@ witness script, `nLockTime ≥ locktime` and a non-final `nSequence`.
 
 ## Dev tools
 
-Mounted only when `DEV_TOOLS=true`, which the server refuses in production and on mainnet.
+Mounted only when `DEV_TOOLS=true`, which the server refuses on mainnet.
 
 ### `POST /api/dev/bottles/:id/advance` 🔒
 

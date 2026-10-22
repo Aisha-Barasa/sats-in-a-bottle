@@ -12,6 +12,7 @@ export default defineConfig({
       WATCHER_INTERVAL_MS: "0",
       BITCOIN_NETWORK: "signet",
       MIN_CONFIRMATIONS: "1",
+      DEV_TOOLS: "false",
     },
   },
 });

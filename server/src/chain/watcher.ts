@@ -103,6 +103,27 @@ export async function runWatcherOnce(chain: ChainClient): Promise<void> {
   }
 }
 
+/**
+ * For serverless hosts, where no timer survives between requests: check the chain when
+ * someone looks at a bottle, at most once per interval. Concurrent callers share one run.
+ */
+export function onDemandWatcher(chain: ChainClient, minIntervalMs = config.WATCHER_INTERVAL_MS): () => Promise<void> {
+  if (minIntervalMs <= 0) return async () => {};
+  let lastRun = 0;
+  let running: Promise<void> | null = null;
+  return () => {
+    if (running) return running;
+    if (Date.now() - lastRun < minIntervalMs) return Promise.resolve();
+    lastRun = Date.now();
+    running = runWatcherOnce(chain)
+      .catch((err) => console.error("watcher: on-demand run failed:", err instanceof Error ? err.message : err))
+      .finally(() => {
+        running = null;
+      });
+    return running;
+  };
+}
+
 export function startWatcher(chain: ChainClient, intervalMs = config.WATCHER_INTERVAL_MS): () => void {
   if (intervalMs <= 0) return () => {};
   let running = false;

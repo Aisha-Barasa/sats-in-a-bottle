@@ -1,0 +1,14 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "npm --prefix web ci && npm --prefix server ci",
+  "buildCommand": "npm run build && DATABASE_URL=\"${DATABASE_URL_UNPOOLED:-$DATABASE_URL}\" npm --prefix server run db:push -- --skip-generate",
+  "outputDirectory": "web/dist",
+  "functions": {
+    "api/index.js": { "includeFiles": "server/node_modules/.prisma/client/**" }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

@@ -1,14 +1,16 @@
 import request from "supertest";
 import { describe, expect, it } from "vitest";
 import { app, createFundableBottle, FakeChain, newSession } from "./helpers.js";
+import { createApp } from "../src/app.js";
 import { prisma } from "../src/db.js";
-import { runWatcherOnce } from "../src/chain/watcher.js";
+import { onDemandWatcher, runWatcherOnce } from "../src/chain/watcher.js";
 import type { AddressTx } from "../src/chain/mempool.js";
 
 async function fundedSetup(amount = 100_000) {
   const token = await newSession();
+  const auth = { Authorization: `Bearer ${token}` };
   const id = await createFundableBottle(token);
-  const funding = await request(app).post(`/api/bottles/${id}/funding`).set("Authorization", `Bearer ${token}`).expect(201);
+  const funding = await request(app).post(`/api/bottles/${id}/funding`).set(auth).expect(201);
   const chain = new FakeChain();
   chain.mtp = Math.floor(Date.now() / 1000);
   const tx: AddressTx = {
@@ -17,7 +19,7 @@ async function fundedSetup(amount = 100_000) {
     vout: [{ scriptpubkey_address: "tb1qchange", value: 5_000 }, { scriptpubkey_address: funding.body.address, value: amount }],
   };
   chain.txs.set(funding.body.address, [tx]);
-  return { id, chain, tx, locktime: funding.body.locktime as number };
+  return { id, auth, chain, tx, locktime: funding.body.locktime as number };
 }
 
 const statusOf = async (id: string) => (await prisma.bottle.findUniqueOrThrow({ where: { id } })).status;
@@ -72,6 +74,30 @@ describe("chain watcher", () => {
     const { id, chain } = await fundedSetup();
     chain.txs.clear();
     await runWatcherOnce(chain);
+    expect(await statusOf(id)).toBe("awaiting_funding");
+  });
+});
+
+describe("on-demand watcher (serverless)", () => {
+  it("brings a bottle up to date when it is read, at most once per interval", async () => {
+    const { id, auth, chain, tx } = await fundedSetup();
+    let runs = 0;
+    const getTipHeight = chain.getTipHeight.bind(chain);
+    chain.getTipHeight = () => (runs++, getTipHeight());
+    const serverless = createApp({ fundingProvider: null, chain, refreshChain: onDemandWatcher(chain, 60_000) });
+
+    const first = await request(serverless).get(`/api/bottles/${id}`).set(auth).expect(200);
+    expect(first.body.status).toBe("funded");
+
+    tx.status = { confirmed: true, block_height: 100 };
+    await Promise.all([1, 2].map(() => request(serverless).get(`/api/bottles/${id}`).set(auth).expect(200)));
+    expect(runs).toBe(1);
+    expect(await statusOf(id)).toBe("funded");
+  });
+
+  it("does nothing when the interval is 0", async () => {
+    const { id, chain } = await fundedSetup();
+    await onDemandWatcher(chain, 0)();
     expect(await statusOf(id)).toBe("awaiting_funding");
   });
 });

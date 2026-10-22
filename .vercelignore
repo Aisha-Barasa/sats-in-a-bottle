@@ -1,0 +1,17 @@
+# Never upload secrets or local data with `vercel deploy`. Vercel installs and builds from source.
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+*.db
+*.db-journal
+node_modules
+**/node_modules
+dist
+**/dist
+server/prisma/sqlite
+web/test-results
+web/playwright-report
+.vercel

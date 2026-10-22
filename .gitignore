@@ -44,3 +44,6 @@ bottles.db
 # Playwright
 web/test-results/
 web/playwright-report/
+
+# Vercel
+.vercel

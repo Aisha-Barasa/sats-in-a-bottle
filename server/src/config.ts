@@ -25,7 +25,7 @@ const schema = z.object({
   BITIKA_BASE_URL: z.string().optional(),
   BITIKA_WEBHOOK_SECRET: z.string().optional(),
 
-  // Demo-only shortcuts (skip a bottle to its next state). Refused in production and on mainnet.
+  // Demo-only shortcuts (skip a bottle to its next state). Refused on mainnet.
   DEV_TOOLS: z
     .enum(["true", "false"])
     .default("false")
@@ -51,8 +51,13 @@ function load(): Config {
   if (cfg.BITIKA_ENV === "live" && cfg.BITCOIN_NETWORK !== "mainnet") {
     throw new Error("BITIKA_ENV=live requires BITCOIN_NETWORK=mainnet");
   }
-  if (cfg.DEV_TOOLS && (cfg.NODE_ENV === "production" || cfg.BITCOIN_NETWORK === "mainnet")) {
-    throw new Error("DEV_TOOLS=true is only allowed outside production and off mainnet");
+  // Skipping ahead moves no coins, so it is safe on test networks, including a hosted demo.
+  if (cfg.DEV_TOOLS && cfg.BITCOIN_NETWORK === "mainnet") {
+    throw new Error("DEV_TOOLS=true is not allowed on mainnet");
+  }
+  // Vercel's filesystem is read-only and wiped between requests, so SQLite can't work there.
+  if (process.env["VERCEL"] && cfg.DATABASE_URL.startsWith("file:")) {
+    throw new Error("On Vercel, DATABASE_URL must be a PostgreSQL URL");
   }
   if (cfg.FUNDING_PROVIDER === "bitika") {
     if (!cfg.BITIKA_API_KEY) throw new Error("FUNDING_PROVIDER=bitika requires BITIKA_API_KEY");
