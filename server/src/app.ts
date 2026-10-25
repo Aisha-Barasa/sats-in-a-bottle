@@ -1,6 +1,6 @@
 import cors from "cors";
 import express from "express";
-import { config } from "./config.js";
+import { config, serviceFeeBps } from "./config.js";
 import { errorHandler } from "./http.js";
 import type { ChainClient } from "./chain/mempool.js";
 import type { FundingProvider } from "./funding/provider.js";
@@ -42,6 +42,7 @@ export function createApp(deps: AppDeps = { fundingProvider: null, chain: null }
       network: config.BITCOIN_NETWORK,
       fundingProvider: p ? { name: p.name, env: config.BITIKA_ENV } : null,
       devTools: config.DEV_TOOLS,
+      serviceFeeBps,
       limits: { minSats: MIN_BOTTLE_SATS, minKes: p?.minKes ?? null, maxKes: p?.maxKes ?? null },
     });
   });

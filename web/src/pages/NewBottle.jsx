@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api, saveSent } from '../lib/api.js';
 import { useAuth } from '../lib/auth.jsx';
 import { isPubkey, newGiftKey, sealMessage } from '../lib/crypto.js';
-import { OCCASIONS, fmtBtc, fmtDay, fmtKes, fmtSats, humanLeft, occasionLabel } from '../lib/format.js';
+import { OCCASIONS, fmtBtc, fmtDay, fmtKes, fmtSats, humanLeft, occasionLabel, serviceFee, fmtBps } from '../lib/format.js';
 import { PhotoPicker, VoiceRecorder } from '../components/Media.jsx';
 import { Spinner, useAsync } from '../components/ui.jsx';
 import BottleCanvas from '../components/BottleCanvas.jsx';
@@ -51,6 +51,7 @@ export default function NewBottle() {
   // Not tied to the current step: the Seal step needs the same quote the Amount step showed.
   const { quote, error: quoteError } = useKesQuote(useKes && Number.isInteger(kes) && kes >= 10 && kes <= 10_000 ? kes : 0, useKes);
   const sats = useKes ? quote?.sats ?? 0 : Number(f.sats);
+  const feeSats = serviceFee(sats, config?.serviceFeeBps);
   const minSats = config?.limits?.minSats ?? 1000;
 
   const problem = useMemo(() => {
@@ -183,6 +184,7 @@ export default function NewBottle() {
             </div>
             <div className="stack-sm"><span className="mono muted">MESSAGE</span><div className="letter" style={{ fontSize: 16, padding: 20, maxHeight: 220, overflow: 'auto' }}>{f.message || '(no letter)'}</div>
               <div className="row wrap-r">{voice && <span className="tag">Voice note</span>}{photo && <span className="tag">Photo</span>}</div></div>
+            {feeSats > 0 && <p className="help">Our service fee is {fmtBps(config.serviceFeeBps)} ({fmtSats(feeSats)} sats), taken when {f.recipientName || 'they'} claims. They receive about {fmtSats(sats - feeSats)} sats, less a small Bitcoin network fee.</p>}
             <p className="help">Next you fund it: pay with M-Pesa or send bitcoin from a wallet. The bottle locks once the payment confirms.</p>
             <div className="callout warn">Once it’s funded, nobody can move these sats before the date, not even you. There is no undo.</div>
             <label className="check"><input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)} /><span>I understand. Seal it.</span></label>

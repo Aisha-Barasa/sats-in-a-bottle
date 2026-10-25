@@ -125,6 +125,10 @@ npm run dev                          # web on http://localhost:5173, API on :400
 **M-Pesa.** Set `FUNDING_PROVIDER=bitika`, `BITIKA_ENV=test` and your `BITIKA_API_KEY=bk_test_…`. Switching to live is
 config only (`BITIKA_ENV=live`, a `bk_live_…` key, `BITCOIN_NETWORK=mainnet`).
 
+**Service fee.** Set `SERVICE_FEE_BPS=150` (1.5%) and a `SERVICE_FEE_ADDRESS` on the same network. New bottles
+record that rate; when the recipient claims in the app, the fee goes to that address as a second output. Off by
+default.
+
 **Database.** SQLite by default (`DATABASE_URL=file:./dev.db`). Set a `postgresql://…` URL to use PostgreSQL.
 
 | Command | What it does |
@@ -157,7 +161,7 @@ plus a photo can be too big to seal there.
 
 ## Testing
 
-- **Server (Vitest, 68 tests):** state machine, locktimes, CLTV scripts, claim transactions and signatures, the REST
+- **Server (Vitest, 73 tests):** state machine, locktimes, CLTV scripts, claim transactions and signatures, the REST
   API, the chain watcher against a fake chain, Bitika requests and signed webhooks.
 - **Real node (`test:regtest`):** starts a throwaway Bitcoin Core regtest node, locks coins to a bottle address,
   checks the claim is rejected before the date (`non-final`), moves chain time past it, and checks the claim is
@@ -175,6 +179,7 @@ plus a photo can be too big to seal there.
 | Limit | Why | Upgrade path |
 |---|---|---|
 | **The share link is the key** | Anyone holding it can claim once the bottle opens, including the sender, whose browser made the gift key | Recipients who need to rule that out give the sender their own public key ("They already have a Bitcoin wallet") |
+| **The service fee is collected by the app** | Bitcoin script can't require a payment output, so someone who builds their own claim with the gift key could skip it | Charge at funding instead, or a provider-side fee on M-Pesa top-ups |
 | **No undo** | Once funded, nothing moves before the date | A sender refund path in the script, designed before mainnet |
 | **Sessions live in the browser** | No passwords: a sender's bottles and share links are tied to the browser that sealed them | Optional accounts or a recovery code |
 | **M-Pesa is one way and two steps** | Bitika pays out over Lightning only, so the sender forwards the sats on-chain | Direct on-chain funding from the provider, and an M-Pesa cash-out for recipients |

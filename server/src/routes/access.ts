@@ -3,7 +3,8 @@ import { z } from "zod";
 import { prisma } from "../db.js";
 import { hashToken } from "../auth.js";
 import { HttpError, parse } from "../http.js";
-import { feeForRate, finalizeClaim, prepareClaim, type ClaimInput } from "../bitcoin/claim.js";
+import { config } from "../config.js";
+import { feeForRate, finalizeClaim, prepareClaim, serviceFeeFor, type ClaimInput } from "../bitcoin/claim.js";
 import type { NetworkName } from "../bitcoin/cltv.js";
 import type { ChainClient } from "../chain/mempool.js";
 import { recipientView, statusView } from "../serializers.js";
@@ -34,12 +35,15 @@ function claimable(access: Access): Omit<ClaimInput, "address" | "feeSats"> {
   if (!lock?.txid || lock.vout == null || !lock.amountSats) {
     throw new HttpError(409, "No on-chain payment was found for this bottle, so there is nothing to claim");
   }
+  // The rate is the one the sender agreed to when the bottle was created.
+  const serviceSats = config.SERVICE_FEE_ADDRESS ? serviceFeeFor(lock.amountSats, bottle.serviceFeeBps) : 0;
   return {
     network: lock.network as NetworkName,
     witnessScript: lock.witnessScript,
     txid: lock.txid,
     vout: lock.vout,
     valueSats: lock.amountSats,
+    serviceFee: serviceSats ? { address: config.SERVICE_FEE_ADDRESS!, sats: serviceSats } : null,
   };
 }
 
@@ -80,8 +84,8 @@ export function accessRouter(chain: ChainClient | null) {
     const coin = claimable(await bottleForToken(req.params["token"]!));
     const rate = Math.max(MIN_FEE_RATE, await requireChain().getFeeRate().catch(() => MIN_FEE_RATE));
     const feeSats = feeForRate({ ...coin, address }, rate);
-    const { sighash, receiveSats } = prepareClaim({ ...coin, address, feeSats });
-    res.json({ address, network: coin.network, valueSats: coin.valueSats, feeSats, feeRate: rate, receiveSats, sighash });
+    const { sighash, receiveSats, serviceFeeSats } = prepareClaim({ ...coin, address, feeSats });
+    res.json({ address, network: coin.network, valueSats: coin.valueSats, feeSats, feeRate: rate, serviceFeeSats, receiveSats, sighash });
   });
 
   /** Step 2: the server rebuilds the same transaction, checks the signature and broadcasts it. */
@@ -95,15 +99,16 @@ export function accessRouter(chain: ChainClient | null) {
     // Guards against a fat-fingered or tampered fee eating the gift.
     if (body.feeSats > coin.valueSats / 2) throw new HttpError(400, "Fee is more than half the bottle");
     const signed = finalizeClaim({ ...coin, address: body.address, feeSats: body.feeSats }, body.signature.toLowerCase());
+    const serviceFeeSats = coin.serviceFee?.sats ?? 0;
     const txid = await requireChain().broadcast(signed.hex);
     await prisma.event.create({
       data: {
         bottleId: access.bottleId,
         type: "claim_broadcast",
-        metadata: JSON.stringify({ txid, address: body.address, feeSats: body.feeSats }),
+        metadata: JSON.stringify({ txid, address: body.address, feeSats: body.feeSats, serviceFeeSats }),
       },
     });
-    res.status(201).json({ txid, receiveSats: coin.valueSats - body.feeSats });
+    res.status(201).json({ txid, serviceFeeSats, receiveSats: coin.valueSats - body.feeSats - serviceFeeSats });
   });
 
   return router;

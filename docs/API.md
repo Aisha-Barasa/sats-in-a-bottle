@@ -57,6 +57,7 @@ A Bitika payment never changes bottle status on its own; only the chain does.
   "network": "signet",
   "fundingProvider": { "name": "bitika", "env": "test" },
   "devTools": false,
+  "serviceFeeBps": 150,
   "limits": { "minSats": 1000, "minKes": 10, "maxKes": 10000 }
 }
 ```
@@ -91,6 +92,7 @@ All routes require the sender's bearer token and only see bottles they own.
   "occasion": "birthday",
   "status": "awaiting_funding",
   "amountSats": 50000,
+  "serviceFeeBps": 150,
   "unlockAt": "2030-06-18T12:00:00.000Z",
   "network": "signet",
   "createdAt": "…",
@@ -330,9 +332,10 @@ Body: `{ "address": "tb1q…" }` (must match the bottle's network).
   "address": "tb1q…",
   "network": "signet",
   "valueSats": 100000,
-  "feeSats": 336,
+  "feeSats": 429,
   "feeRate": 3,
-  "receiveSats": 99664,
+  "serviceFeeSats": 1500,
+  "receiveSats": 98071,
   "sighash": "<32-byte hex>"
 }
 ```
@@ -341,15 +344,20 @@ The server builds a version-2 transaction spending the lock output to `address` 
 `nSequence = 0xfffffffe`, sized for the mempool.space half-hour fee rate (minimum 2 sat/vB). `sighash` is its
 BIP143 signature hash. Nothing is stored; step 2 rebuilds the same transaction.
 
+**Service fee.** When the bottle has a `serviceFeeBps` (fixed when it was created) and the server has a
+`SERVICE_FEE_ADDRESS`, the transaction gets a second output paying `floor(valueSats × serviceFeeBps / 10000)` sats
+to that address. It's left out when it would be below the 330-sat dust limit (`serviceFeeSats: 0`). The signature
+covers both outputs, so the fee can't be added or removed after signing.
+
 ### `POST /api/access/:token/claim`
 
-Body: `{ "address": "tb1q…", "feeSats": 336, "signature": "<64-byte compact hex, low-S>" }`
+Body: `{ "address": "tb1q…", "feeSats": 429, "signature": "<64-byte compact hex, low-S>" }`
 
 The recipient's browser signs `sighash` with the gift key from the link. The server rebuilds the transaction,
 verifies the signature against the bottle's public key, adds the witness `[signature, witnessScript]` and
 broadcasts it through mempool.space.
 
-- `201` → `{ "txid": "…", "receiveSats": 99664 }`, recorded as a `claim_broadcast` event. The watcher marks the
+- `201` → `{ "txid": "…", "serviceFeeSats": 1500, "receiveSats": 98071 }`, recorded as a `claim_broadcast` event. The watcher marks the
   bottle `claimed` once it sees the spend.
 - `400`: bad address, signature that doesn't match, fee over half the bottle, output below dust.
 - `409`: not unlockable yet, already claimed, or no on-chain funds (for example a bottle skipped with dev tools).

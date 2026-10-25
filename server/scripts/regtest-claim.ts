@@ -13,7 +13,7 @@ import path from "node:path";
 import * as bitcoin from "bitcoinjs-lib";
 import * as ecc from "tiny-secp256k1";
 import { createCltvLock } from "../src/bitcoin/cltv.js";
-import { feeForRate, finalizeClaim, prepareClaim } from "../src/bitcoin/claim.js";
+import { feeForRate, finalizeClaim, prepareClaim, serviceFeeFor } from "../src/bitcoin/claim.js";
 
 const bin = process.env["BITCOIN_BIN"];
 if (!bin) {
@@ -53,7 +53,11 @@ try {
 
   const dest = wallet("getnewaddress", "", "bech32");
   const destTb1 = bitcoin.address.fromOutputScript(bitcoin.address.toOutputScript(dest, bitcoin.networks.regtest), bitcoin.networks.testnet);
-  const coin = { network: "testnet" as const, witnessScript: lock.witnessScript, txid: fundTxid, vout, valueSats: 100_000 };
+  // A 1.5% service fee, paid as a second output, as the app's claim flow does.
+  const feeWallet = wallet("getnewaddress", "", "bech32");
+  const feeTb1 = bitcoin.address.fromOutputScript(bitcoin.address.toOutputScript(feeWallet, bitcoin.networks.regtest), bitcoin.networks.testnet);
+  const serviceFee = { address: feeTb1, sats: serviceFeeFor(100_000, 150) };
+  const coin = { network: "testnet" as const, witnessScript: lock.witnessScript, txid: fundTxid, vout, valueSats: 100_000, serviceFee };
   const feeSats = feeForRate({ ...coin, address: destTb1 }, 2);
   const { sighash } = prepareClaim({ ...coin, address: destTb1, feeSats });
   const signature = Buffer.from(ecc.sign(Buffer.from(sighash, "hex"), priv)).toString("hex");
@@ -75,7 +79,9 @@ try {
   wallet("generatetoaddress", "1", miner);
   const mined = JSON.parse(rpc("getrawtransaction", sent, "true"));
   check(sent === txid && mined.confirmations === 1, `claim ${txid.slice(0, 16)}… mined`);
-  check(Math.round(mined.vout[0].value * 1e8) === 100_000 - feeSats, `recipient receives ${100_000 - feeSats} sats after a ${feeSats}-sat fee`);
+  const receive = 100_000 - feeSats - serviceFee.sats;
+  check(Math.round(mined.vout[0].value * 1e8) === receive, `recipient receives ${receive} sats after a ${feeSats}-sat network fee`);
+  check(Math.round(mined.vout[1].value * 1e8) === serviceFee.sats, `service fee of ${serviceFee.sats} sats paid as a second output`);
 } finally {
   try {
     rpc("stop");

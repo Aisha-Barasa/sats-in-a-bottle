@@ -1,5 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import * as bitcoin from "bitcoinjs-lib";
 import dotenv from "dotenv";
 import { z } from "zod";
 
@@ -24,6 +25,11 @@ const schema = z.object({
   BITIKA_API_KEY: z.string().optional(),
   BITIKA_BASE_URL: z.string().optional(),
   BITIKA_WEBHOOK_SECRET: z.string().optional(),
+
+  // Service fee taken as a second output when a bottle is claimed in the app, in basis points
+  // (150 = 1.5%). Each bottle keeps the rate it was created with. Needs SERVICE_FEE_ADDRESS.
+  SERVICE_FEE_BPS: z.coerce.number().int().min(0).max(1000).default(0),
+  SERVICE_FEE_ADDRESS: z.string().trim().optional(),
 
   // Demo-only shortcuts (skip a bottle to its next state). Refused on mainnet.
   DEV_TOOLS: z
@@ -66,6 +72,15 @@ function load(): Config {
       throw new Error(`BITIKA_API_KEY does not look like a ${cfg.BITIKA_ENV} key (expected bk_${cfg.BITIKA_ENV}_ prefix)`);
     }
   }
+  if (cfg.SERVICE_FEE_BPS > 0) {
+    if (!cfg.SERVICE_FEE_ADDRESS) throw new Error("SERVICE_FEE_BPS needs SERVICE_FEE_ADDRESS");
+    const network = cfg.BITCOIN_NETWORK === "mainnet" ? bitcoin.networks.bitcoin : bitcoin.networks.testnet;
+    try {
+      bitcoin.address.toOutputScript(cfg.SERVICE_FEE_ADDRESS, network);
+    } catch {
+      throw new Error(`SERVICE_FEE_ADDRESS is not a valid ${cfg.BITCOIN_NETWORK} address`);
+    }
+  }
   return cfg;
 }
 
@@ -75,5 +90,8 @@ export const mempoolApiUrl = config.MEMPOOL_API_URL ?? MEMPOOL_DEFAULTS[config.B
 
 // Bitika serves sandbox and live from the same host; the key decides which.
 export const bitikaBaseUrl = (config.BITIKA_BASE_URL || "https://bitikaserver.up.railway.app").replace(/\/+$/, "");
+
+/** The fee new bottles are created with: off unless both the rate and the address are set. */
+export const serviceFeeBps = config.SERVICE_FEE_ADDRESS ? config.SERVICE_FEE_BPS : 0;
 
 export const isSqlite = config.DATABASE_URL.startsWith("file:");

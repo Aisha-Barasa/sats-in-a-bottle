@@ -37,6 +37,7 @@ export function bottleView(bottle: BottleWithRelations) {
     occasion: bottle.occasion,
     status: bottle.status,
     amountSats: bottle.amountSats,
+    serviceFeeBps: bottle.serviceFeeBps,
     unlockAt: bottle.unlockAt.toISOString(),
     network: bottle.network,
     createdAt: bottle.createdAt.toISOString(),
