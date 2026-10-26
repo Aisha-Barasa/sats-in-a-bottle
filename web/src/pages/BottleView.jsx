@@ -209,7 +209,7 @@ function Locked({ b, reload }) {
 function WaitingForClaim({ b }) {
   return (
     <div className="card stack">
-      <span className="tag yellow">Open</span>
+      <span className="tag orange">Open</span>
       <h2 className="h2">Waiting for {b.recipientName} to claim</h2>
       <p className="muted">The date has passed. They can read your message and claim the sats from their link.</p>
     </div>
