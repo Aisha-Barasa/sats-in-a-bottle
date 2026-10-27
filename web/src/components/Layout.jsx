@@ -17,7 +17,7 @@ export function Nav() {
   const [menu, setMenu] = useState(false);
   useEffect(() => { setMenu(false); }, [loc.pathname, loc.hash]);
   useEffect(() => { document.body.style.overflow = menu ? 'hidden' : ''; return () => { document.body.style.overflow = ''; }; }, [menu]);
-  useEffect(() => { // header turns dark/yellow while it floats over a black section
+  useEffect(() => { // header turns dark/orange while it floats over a black section
     let raf = 0;
     const check = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { setScrolled(window.scrollY > 8); setDark(document.elementsFromPoint(window.innerWidth / 2, 40).some((e) => e.closest?.('[data-dark]'))); }); };
     check(); const t = setTimeout(check, 150);

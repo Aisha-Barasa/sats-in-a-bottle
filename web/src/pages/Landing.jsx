@@ -10,8 +10,8 @@ const LOOP = { hold: 1400, open: 2000, rest: 1300, fade: 350, build: 4200 }; // 
 
 const TRIO = [
   ['Message', 'A letter, a voice note or a photo. Only they can see it, and only on the day.', ['#d1ffca', '#fff', '#000']],
-  ['Amount', 'Start with a few hundred shillings. Pay with M-Pesa or bitcoin.', ['#fff100', '#fff', '#000']],
-  ['Date', 'A birthday, a graduation, or any day you choose.', ['#fff', '#d1ffca', '#fff100']],
+  ['Amount', 'Start with a few hundred shillings. Pay with M-Pesa or bitcoin.', ['#f7931a', '#fff', '#000']],
+  ['Date', 'A birthday, a graduation, or any day you choose.', ['#fff', '#d1ffca', '#f7931a']],
 ];
 const IDEAS = [
   ['Birthdays', 'Write it now. They open it on the day.', 'cake'],

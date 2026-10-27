@@ -40,8 +40,7 @@ function FallbackBottle({ className }) {
     <div className={className} style={{ display: 'grid', placeItems: 'center' }}>
       <svg className="bob" width="150" viewBox="0 0 64 100" role="img" aria-label="Bottle">
         <path d="M26 4h12v14l8 16v52a8 8 0 0 1-8 8H26a8 8 0 0 1-8-8V34l8-16z" fill="#d1ffca" stroke="#000" strokeWidth="2" />
-        <rect x="18" y="46" width="28" height="22" fill="#000" /><circle cx="32" cy="57" r="6" fill="#fff100" />
-      </svg>
+        <rect x="18" y="46" width="28" height="22" fill="#000" /><circle cx="32" cy="57" r="6" fill="#f7931a" />      </svg>
     </div>
   );
 }

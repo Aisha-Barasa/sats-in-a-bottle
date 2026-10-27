@@ -8,7 +8,7 @@ export const Loading = () => <div className="center-screen"><Spinner /></div>;
 
 export function StatusTag({ status }) {
   const s = STATUS[status] || { label: status };
-  const cls = status === 'unlockable' ? 'yellow' : status === 'sealed' ? 'dark' : status === 'claimed' ? '' : 'gray';
+  const cls = status === 'unlockable' ? 'orange' : status === 'sealed' ? 'dark' : status === 'claimed' ? '' : 'gray';
   return <span className={`tag ${cls}`}>{s.label}</span>;
 }
 

@@ -1,6 +1,6 @@
 # Sats in a Bottle: Design System
 
-Brutalist editorial on a warm gray canvas. Modelled on dayos.com. Flat surfaces, no shadows, no gradients (except one fade mask on 3D art), condensed uppercase headlines, one pale mint accent and one yellow spark.
+Brutalist editorial on a warm gray canvas. Modelled on dayos.com. Flat surfaces, no shadows, no gradients (except one fade mask on 3D art), condensed uppercase headlines, one pale mint accent and one orange spark.
 
 Source of truth in code: `web/src/styles.css` (tokens at the top, sections below). Components: `web/src/components/`. 3D: `web/src/lib/bottleScene.js`, blocks: `web/src/components/Blocks.jsx`.
 
@@ -19,13 +19,13 @@ Source of truth in code: `web/src/styles.css` (tokens at the top, sections below
 | `--color-slate` | `#444444` | Secondary text on light, nav links, ghost buttons |
 | `--color-graphite` | `#2f2f2f` | Dark buttons, tiles on black, header pill on black |
 | `--color-mint-chip` | `#d1ffca` | Tags, glass tint, focus underline, small accents |
-| `--color-voltage-yellow` | `#fff100` | Header button over black, status "ready", coins. Micro-accents only |
+| `--color-bitcoin-orange` | `#f7931a` | Header button over black, status "ready", coins. Micro-accents only |
 | `--color-danger` | `#b00020` | Errors, destructive outline buttons |
 
-Block art tones: ink `#1a1a1a`, mint, yellow, off-white `#efede8`, skin `#f1cdb0` (baby model only), concrete panel `#d8d4cc`.
+Block art tones: ink `#1a1a1a`, mint, orange, off-white `#efede8`, skin `#f1cdb0` (baby model only), concrete panel `#d8d4cc`.
 
 Rules
-- Mint and yellow are never large surface fills. Yellow on dark header button and "ready" states only.
+- Mint and orange are never large surface fills. orange on dark header button and "ready" states only.
 - Contrast: black on `#e5e5e5`/white, white on black. Gray text only for secondary copy.
 
 ## 2. Typography
@@ -77,7 +77,7 @@ No box-shadows. Depth comes from surface contrast: canvas, white, black.
 - Left: bottle icon + "Sats in a Bottle" (Inter 700, 20px, -0.04em).
 - Center: pill, 44px tall, `#f0f0f0`, links Inter 14px/450 `#444`, active/hover black.
 - Right: black button, 38px tall, 8px radius, Inter 14px/500, white text.
-- Over a `[data-dark]` section the pill becomes `#1b1b1b` with `#a8a8a8` links and the button turns **yellow with black text**. Detected via `elementsFromPoint` on scroll.
+- Over a `[data-dark]` section the pill becomes `#1b1b1b` with `#a8a8a8` links and the button turns **orange with black text**. Detected via `elementsFromPoint` on scroll.
 - After 8px of scroll the header gets a backing (`rgba(229,229,229,.94)` + blur, `rgba(0,0,0,.94)` over dark) so content never collides with it.
 - Hidden pill under 980px.
 
@@ -97,20 +97,20 @@ No box-shadows. Depth comes from surface contrast: canvas, white, black.
 - **Ghost**: transparent, 1.5px `#444` border, 4px radius.
 - **Gray button** (`.btn-gray`): `#f3f3f3`, black text, 40px high. For secondary card actions.
 - **Dark small** (`.btn-dark-sm`): `#2f2f2f`, 48px.
-- **Yellow**: only for the header button on black and "Open it now".
-- **Tag**: mono 12px, uppercase, pill. Variants: mint (default), dark, light, yellow, gray.
-- **Status tag**: sealed = dark, ready = yellow, claimed = mint, others gray.
+- **orange**: only for the header button on black and "Open it now".
+- **Tag**: mono 12px, uppercase, pill. Variants: mint (default), dark, light, orange, gray.
+- **Status tag**: sealed = dark, ready = orange, claimed = mint, others gray.
 - **Card** `.card`: white, 32px radius, 20px padding, no border/shadow. `.card.ink` is black with white text.
 - **Inputs** `.fld` / `.wiz-body`: mono 12px label, 24 to 26px value, bottom border; focus adds a 3px mint underline (`box-shadow: 0 3px 0 mint`).
 - **Countdown**: four tiles (days, hrs, min, sec), condensed numerals, graphite tiles on black.
 - **Modal**: white, 32px radius, 560px max, backdrop `rgba(0,0,0,.55)`, focus trapped on open, Escape closes.
 - **Toast**: black pill, bottom center, 4.5s.
 - **Progress bar** (wizard): 5 segments, 5px tall, black when reached, ash otherwise.
-- **Callout**: mint (info), yellow (warning), pink `#ffd9de` (error).
+- **Callout**: mint (info), orange (warning), pink `#ffd9de` (error).
 
 ## 8. Imagery and motion
 
-**Hero bottle (three.js)**: glass bottle (lathe geometry, physical transmission, mint tint) on a concrete block with two small cubes (mint, yellow). Black ₿ wrap, rolled message, sats coins, cork.
+**Hero bottle (three.js)**: glass bottle (lathe geometry, physical transmission, mint tint) on a concrete block with two small cubes (mint, orange). Black ₿ wrap, rolled message, sats coins, cork.
 - Intro plays once (~5s) with scroll locked and a Skip link: wrap slides to the neck, message drops in, coins pour in, cork presses in, sparks at the seal.
 - Then loops: hold, cork pops with burst and flash, fade out, rebuild. Bottle always stands on the block.
 - Smoothing is time-based, not per-frame. Reduced motion shows the sealed state, no loop.
@@ -144,7 +144,7 @@ Hero: "Not just a transfer. A bottle with a date on it."
 
 - No box-shadows, gradients, or borders on cards.
 - No pure white page background.
-- No mint/yellow large fills.
+- No mint/orange large fills.
 - No condensed face below 36px or in body copy.
 - No emoji, em dashes, or exclamation marks in copy.
 - No centered-hero layouts; the system is left-aligned with the object on the right.
