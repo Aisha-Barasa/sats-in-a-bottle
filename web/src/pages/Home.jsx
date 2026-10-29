@@ -1,13 +1,13 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/auth.jsx';
 import PoppingCanvas from '../components/PoppingCanvas.jsx';
-import { Blocks, INK, MINT, YEL } from '../components/Blocks.jsx';
+import { Blocks, INK, MINT, ORANGE } from '../components/Blocks.jsx';
 import { Loading, StatusTag } from '../components/ui.jsx';
 import { unlockLine, whoLine } from '../components/BottleRow.jsx';
 import { fmtSats, humanLeft, ms } from '../lib/format.js';
 import { bottleHref, useBottles } from '../lib/useBottles.js';
 
-const TONES = { draft: ['#fff', '#fff', INK], awaiting_funding: ['#fff', MINT, INK], funded: [MINT, '#fff', INK], sealed: [INK, '#fff', MINT], unlockable: [YEL, '#fff', INK], claimed: [MINT, MINT, '#fff'] };
+const TONES = { draft: ['#fff', '#fff', INK], awaiting_funding: ['#fff', MINT, INK], funded: [MINT, '#fff', INK], sealed: [INK, '#fff', MINT], unlockable: [ORANGE, '#fff', INK], claimed: [MINT, MINT, '#fff'] };
 
 function BottleCard({ b, i }) {
   const cta = b.token && b.status === 'unlockable' ? 'Open it' : b.status === 'awaiting_funding' ? 'Fund it' : 'View';
@@ -42,8 +42,7 @@ export default function Home() {
           <div className="dash-cta">
             <p className="hero-p">{line}</p>
             <div className="row wrap-r">
-              {waiting.length > 0 && <Link to={bottleHref(waiting[0])} className="btn-dark-sm" style={{ background: 'var(--color-voltage-yellow)', color: '#000' }}>Open it now</Link>}
-              <Link to="/create" className="btn-dark-sm">Create a bottle</Link>
+{waiting.length > 0 && <Link to={bottleHref(waiting[0])} className="btn-dark-sm" style={{ background: 'var(--color-bitcoin-orange)', color: '#000' }}>Open it now</Link>}              <Link to="/create" className="btn-dark-sm">Create a bottle</Link>
             </div>
           </div>
         </div>

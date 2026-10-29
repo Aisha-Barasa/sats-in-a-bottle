@@ -147,7 +147,7 @@ export default function NewBottle() {
             <label className="field"><span>Opens on</span><input className="input" type="datetime-local" min={toLocalInput(new Date())} value={f.at} onChange={set('at')} /></label>
             <div className="row wrap-r">
               {PRESETS.map(([l, d]) => <button key={l} type="button" className="tag light" style={tagBtn} onClick={() => presetAt(d)}>in {l}</button>)}
-              {config?.devTools && <button type="button" className="tag yellow" style={tagBtn} onClick={() => setF({ ...f, at: toLocalInput(new Date(Date.now() + 15 * 60e3)) })}>in 15 min (demo)</button>}
+              {config?.devTools && <button type="button" className="tag orange" style={tagBtn} onClick={() => setF({ ...f, at: toLocalInput(new Date(Date.now() + 15 * 60e3)) })}>in 15 min (demo)</button>}
             </div>
             {at && !isNaN(at) && <div className="card ink"><span className="mono faint">THIS BOTTLE WILL OPEN ON</span><div className="amount-big" style={{ marginTop: 8 }}>{fmtDay(at)}</div><div className="muted" style={{ marginTop: 8 }}>{at.toLocaleTimeString(undefined, { timeStyle: 'short' })} · in {humanLeft(at - Date.now())}</div></div>}
             <p className="help">Bitcoin enforces the date. Its clock runs about an hour behind, so it can open up to an hour after this time.</p>

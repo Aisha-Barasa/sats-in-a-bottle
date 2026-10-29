@@ -12,7 +12,7 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
  *            .86-1.0    sealed: camera pulls back, block rises
  *   open 0→1           (reveal) cork pops, message rises, sats spiral out, wrap drops off
  */
-const INK = 0x000000, MINT = 0xd1ffca, YELLOW = 0xfff100, CANVAS = 0xe5e5e5;
+const INK = 0x000000, MINT = 0xd1ffca, ORANGE = 0xfff100, CANVAS = 0xe5e5e5;
 const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
 const seg = (p, a, b) => { const t = clamp((p - a) / (b - a)); return t * t * (3 - 2 * t); };
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -37,7 +37,7 @@ function wrapTexture() {
   g.fillText('SATS IN A BOTTLE · SEALED · SATS IN A BOTTLE ·', 40, 150);
   g.fillStyle = '#979797'; g.font = '400 40px "JetBrains Mono", ui-monospace, monospace';
   g.fillText('0.00000001 BTC = 1 SAT   ·   OPEN WHEN THE TIME IS RIGHT   ·   0.00000001 BTC = 1 SAT', 40, 250);
-  for (let i = 0; i < 4; i++) drawBitcoin(g, 256 + i * 512, 380, 72, '#000', i % 2 ? '#fff100' : '#fff');
+  for (let i = 0; i < 4; i++) drawBitcoin(g, 256 + i * 512, 380, 72, '#000', i % 2 ? '#f7931a' : '#fff');
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; t.wrapS = THREE.RepeatWrapping;
   return t;
 }
@@ -104,7 +104,7 @@ export function createBottleScene(canvas, { reducedMotion = false } = {}) {
     const m = new THREE.Mesh(track(new THREE.BoxGeometry(s, s, s)), track(new THREE.MeshStandardMaterial({ color, roughness: 0.55 })));
     m.position.set(x, y + s / 2, z); m.rotation.y = x * 0.7; block.add(m); m.position.y = 0.35 + s / 2; return m;
   };
-  mkCube(0.3, MINT, 1.25, 1.2); mkCube(0.3, YELLOW, -1.25, 1.2);
+  mkCube(0.3, MINT, 1.25, 1.2); mkCube(0.3, ORANGE, -1.25, 1.2);
   const shadowTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d'); const gr = g.createRadialGradient(64, 64, 4, 64, 64, 62); gr.addColorStop(0, 'rgba(0,0,0,.55)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(0, 0, 128, 128); return track(new THREE.CanvasTexture(c)); })();
   const shadow = new THREE.Mesh(track(new THREE.PlaneGeometry(2.6, 2.6)), track(new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false })));
   shadow.rotation.x = -Math.PI / 2; shadow.position.y = 0.02; root.add(shadow);
@@ -130,7 +130,7 @@ export function createBottleScene(canvas, { reducedMotion = false } = {}) {
   const ribbon = new THREE.Mesh(track(new THREE.CylinderGeometry(0.136, 0.136, 0.12, 24)), track(new THREE.MeshStandardMaterial({ color: INK, roughness: 0.6 }))); paper.add(ribbon);
 
   const coinGeo = track(new THREE.CylinderGeometry(0.17, 0.17, 0.045, 32));
-  const coinMats = [track(new THREE.MeshStandardMaterial({ map: track(coinTexture('#fff100')), roughness: 0.4, metalness: 0.15 })),
+  const coinMats = [track(new THREE.MeshStandardMaterial({ map: track(coinTexture('#f7931a')), roughness: 0.4, metalness: 0.15 })),
     track(new THREE.MeshStandardMaterial({ map: track(coinTexture('#ffffff')), roughness: 0.4, metalness: 0.1 }))];
   const edge = track(new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.5 }));
   const coins = Array.from({ length: 10 }, (_, i) => {

@@ -40,7 +40,7 @@ export default function OpenBottle() {
   return (
     <div className="stack">
       <div className="page-head stack-sm">
-        <span className="tag yellow" style={{ alignSelf: 'flex-start' }}>From {from}</span>
+        <span className="tag orange" style={{ alignSelf: 'flex-start' }}>From {from}</span>
         <h1 className="display">{b.title}</h1>
         <span className="mono muted">{b.occasion ? `${occasionLabel(b.occasion).toUpperCase()} · ` : ''}FOR {b.recipientName.toUpperCase()}</span>
       </div>
@@ -96,7 +96,7 @@ function Reveal({ b, token, keys, reload }) {
       <div className="hero-bottle bv-hero"><BottleCanvas zoom={0.88} progress={1} open={pop} label={pop ? 'The bottle has opened' : 'A bottle ready to open'} /></div>
       <div className="stack">
         {!msg ? <div className="card ink stack">
-          <span className="tag yellow">Ready</span>
+          <span className="tag orange">Ready</span>
           <h2 className="display" style={{ fontSize: 56 }}>The day is here.</h2>
           <p className="muted">{b.senderName || 'Someone'} left you a message and {fmtSats(b.amountSats)} sats.</p>
           {error && <p className="err" role="alert">{error.message}</p>}
