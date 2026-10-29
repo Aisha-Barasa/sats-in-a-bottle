@@ -24,7 +24,17 @@ export type ClaimInput = {
   valueSats: number;
   address: string;
   feeSats: number;
+  /** Our service fee, paid as a second output. */
+  serviceFee?: ServiceFee | null;
 };
+
+export type ServiceFee = { address: string; sats: number };
+
+/** Basis points of the bottle's value, or 0 when that would be too small an output to relay. */
+export function serviceFeeFor(valueSats: number, bps: number): number {
+  const sats = Math.floor((valueSats * bps) / 10_000);
+  return sats >= DUST_SATS ? sats : 0;
+}
 
 function outputScript(address: string, network: NetworkName): Buffer {
   try {
@@ -37,15 +47,17 @@ function outputScript(address: string, network: NetworkName): Buffer {
 function buildTx(input: ClaimInput) {
   const { locktime } = parseCltvScript(input.witnessScript);
   const script = outputScript(input.address, input.network);
-  const value = input.valueSats - input.feeSats;
+  const service = input.serviceFee?.sats ?? 0;
+  const value = input.valueSats - input.feeSats - service;
   if (!Number.isInteger(input.feeSats) || input.feeSats <= 0) throw new ClaimError("Fee must be a positive whole number of sats");
-  if (value < DUST_SATS) throw new ClaimError("The bottle holds too little to cover the network fee");
+  if (value < DUST_SATS) throw new ClaimError("The bottle holds too little to cover the fees");
 
   const tx = new bitcoin.Transaction();
   tx.version = 2;
   tx.locktime = locktime;
   tx.addInput(Buffer.from(input.txid, "hex").reverse(), input.vout, SEQUENCE);
   tx.addOutput(script, value);
+  if (input.serviceFee && service >= DUST_SATS) tx.addOutput(outputScript(input.serviceFee.address, input.network), service);
   return tx;
 }
 
@@ -67,7 +79,7 @@ export function feeForRate(input: Omit<ClaimInput, "feeSats">, satPerVbyte: numb
 /** What the recipient's browser signs: a 32-byte BIP143 sighash. */
 export function prepareClaim(input: ClaimInput) {
   const tx = buildTx(input);
-  return { sighash: sighash(tx, input).toString("hex"), receiveSats: input.valueSats - input.feeSats };
+  return { sighash: sighash(tx, input).toString("hex"), receiveSats: tx.outs[0]!.value, serviceFeeSats: input.serviceFee?.sats ?? 0 };
 }
 
 /**

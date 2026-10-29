@@ -6,7 +6,7 @@ import { nextStatus, transitionBottle, type BottleStatus } from "../domain/bottl
 import { bottleView } from "../serializers.js";
 
 /**
- * Demo shortcuts, mounted only when DEV_TOOLS=true (never in production or on mainnet).
+ * Demo shortcuts, mounted only when DEV_TOOLS=true (never on mainnet).
  * Skipping ahead does not create on-chain funds, so a skipped bottle can be opened
  * but has nothing to claim.
  */

@@ -95,3 +95,31 @@ jobs:
           name: playwright-report
           path: web/playwright-report
           retention-days: 7
+
+  deploy:
+    name: Deploy to Vercel (production)
+    runs-on: ubuntu-latest
+    # Only pushes to main (a merged PR is one), and only once every check above has passed.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [server, regtest, web, e2e]
+    concurrency:
+      group: vercel-production
+      cancel-in-progress: false
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      # Not secret: they only name the Vercel team and project (see .vercel/project.json after `vercel link`).
+      VERCEL_ORG_ID: team_oTVaW4BWnJXpW0Bb98xy9tnQ
+      VERCEL_PROJECT_ID: prj_Bmm89wnewKeYodzpTAU5ienqzlQC
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Vercel builds it the same way as `vercel deploy --prod` from a laptop, with the project's env vars.
+      - name: Deploy
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::warning::VERCEL_TOKEN secret is not set, so this push was not deployed."
+            exit 0
+          fi
+          npx --yes vercel@65.7.0 deploy --prod --yes --token "$VERCEL_TOKEN"

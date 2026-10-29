@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { ApiError, api, listReceived, rememberReceived } from '../lib/api.js';
 import { openMessage, signClaim } from '../lib/crypto.js';
-import { CHAIN_CLOCK_NOTE, explorerTx, fmtBtc, fmtDay, fmtSats, ms, occasionLabel } from '../lib/format.js';
+import { CHAIN_CLOCK_NOTE, explorerTx, fmtBtc, fmtDay, fmtSats, ms, occasionLabel, fmtBps } from '../lib/format.js';
 import BottleCanvas from '../components/BottleCanvas.jsx';
 import { CopyButton, Countdown, Loading, Spinner, useAsync } from '../components/ui.jsx';
 
@@ -146,7 +146,8 @@ function ClaimPanel({ b, token, giftKey, reload }) {
         {error && <p className="err" role="alert">{error.message}</p>}
         <button className="btn btn-dark" disabled={busy || address.length < 14} onClick={() => run(async () => setPrep(await api.claimPrepare(token, address)))}>{busy ? <Spinner /> : 'Continue'}</button>
       </> : <>
-        <div className="card ink"><span className="mono faint">YOU RECEIVE</span><div className="amount-big num">{fmtSats(prep.receiveSats)}</div><span className="mono faint">SATS AFTER A {fmtSats(prep.feeSats)}-SAT NETWORK FEE</span></div>
+        <div className="card ink"><span className="mono faint">YOU RECEIVE</span><div className="amount-big num">{fmtSats(prep.receiveSats)}</div><span className="mono faint">SATS AFTER A {fmtSats(prep.feeSats)}-SAT NETWORK FEE{prep.serviceFeeSats > 0 && ` AND A ${fmtSats(prep.serviceFeeSats)}-SAT SERVICE FEE`}</span></div>
+        {prep.serviceFeeSats > 0 && <p className="help">The service fee ({fmtBps(b.serviceFeeBps)}) was agreed when the bottle was sealed and keeps Sats in a Bottle running.</p>}
         <span className="mono muted">TO</span><div className="copybox"><code style={{ wordBreak: 'break-all' }}>{prep.address}</code></div>
         <label className="check"><input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)} /><span>This address is mine. Bitcoin payments can’t be reversed.</span></label>
         {error && <p className="err" role="alert">{error.message}</p>}

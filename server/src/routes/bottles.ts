@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { config } from "../config.js";
+import { config, serviceFeeBps } from "../config.js";
 import { prisma } from "../db.js";
 import { currentUser, generateToken, hashToken, requireUser } from "../auth.js";
 import { HttpError, parse } from "../http.js";
@@ -90,6 +90,7 @@ bottlesRouter.post("/", async (req, res) => {
       title: body.title,
       recipientName: body.recipientName,
       amountSats: body.amountSats,
+      serviceFeeBps,
       unlockAt: new Date(body.unlockAt),
       recipientPubkey: body.recipientPubkey?.toLowerCase() ?? null,
       senderName: body.senderName ?? null,

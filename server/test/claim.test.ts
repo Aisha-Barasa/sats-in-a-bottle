@@ -2,7 +2,7 @@ import * as bitcoin from "bitcoinjs-lib";
 import * as ecc from "tiny-secp256k1";
 import { describe, expect, it } from "vitest";
 import { createCltvLock } from "../src/bitcoin/cltv.js";
-import { ClaimError, claimVsize, feeForRate, finalizeClaim, prepareClaim, type ClaimInput } from "../src/bitcoin/claim.js";
+import { ClaimError, claimVsize, feeForRate, finalizeClaim, prepareClaim, serviceFeeFor, type ClaimInput } from "../src/bitcoin/claim.js";
 import { PUBKEY } from "./helpers.js";
 
 // PUBKEY is the generator point, i.e. the public key of private key 1.
@@ -83,3 +83,39 @@ describe("CLTV claim transaction", () => {
     expect(feeForRate({ ...coin, address: ADDRESS }, 0)).toBe(Math.ceil(vsize));
   });
 });
+
+describe("service fee", () => {
+  const PRIV2 = Buffer.alloc(32);
+  PRIV2[31] = 2;
+  const FEE_ADDRESS = bitcoin.payments.p2wpkh({ pubkey: Buffer.from(ecc.pointFromScalar(PRIV2)!), network: bitcoin.networks.testnet }).address!;
+  const withFee: ClaimInput = { ...input, serviceFee: { address: FEE_ADDRESS, sats: serviceFeeFor(100_000, 150) } };
+
+  it("is a share of the bottle, skipped when it would be dust", () => {
+    expect(serviceFeeFor(100_000, 150)).toBe(1_500);
+    expect(serviceFeeFor(21_999, 150)).toBe(0); // 329 sats is below dust
+    expect(serviceFeeFor(22_000, 150)).toBe(330);
+    expect(serviceFeeFor(100_000, 0)).toBe(0);
+  });
+
+  it("is paid as a second output, and the recipient gets the rest", () => {
+    const { sighash, receiveSats, serviceFeeSats } = prepareClaim(withFee);
+    expect(serviceFeeSats).toBe(1_500);
+    expect(receiveSats).toBe(100_000 - 500 - 1_500);
+    const tx = bitcoin.Transaction.fromHex(finalizeClaim(withFee, sign(sighash)).hex);
+    expect(tx.outs.map((o) => o.value)).toEqual([receiveSats, 1_500]);
+    expect(bitcoin.address.fromOutputScript(tx.outs[1]!.script, bitcoin.networks.testnet)).toBe(FEE_ADDRESS);
+  });
+
+  it("is covered by the signature, so it can't be added or removed afterwards", () => {
+    const signedWithout = sign(prepareClaim(input).sighash);
+    expect(() => finalizeClaim(withFee, signedWithout)).toThrow(/does not match/);
+    const signedWith = sign(prepareClaim(withFee).sighash);
+    expect(() => finalizeClaim(input, signedWith)).toThrow(/does not match/);
+  });
+
+  it("adds its output to the size used for the network fee", () => {
+    // A P2WPKH output is 31 bytes.
+    expect(claimVsize({ ...coin, address: ADDRESS, serviceFee: withFee.serviceFee })).toBe(claimVsize({ ...coin, address: ADDRESS }) + 31);
+  });
+});
+

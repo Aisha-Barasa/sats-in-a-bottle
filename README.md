@@ -116,7 +116,7 @@ npm run dev                          # web on http://localhost:5173, API on :400
 > [!TIP]
 > **Demo mode.** Set `DEV_TOOLS=true` in `server/.env` to get "Demo: skip ahead" buttons, so you can walk the whole
 > journey in a few minutes without waiting for blocks. No coins move, so a skipped bottle can be opened but has
-> nothing to claim. The server refuses demo mode in production and on mainnet.
+> nothing to claim. The server refuses demo mode on mainnet.
 
 > [!NOTE]
 > Recording a voice note needs the page served over `http://localhost` or `https://`. Browsers block the
@@ -124,6 +124,10 @@ npm run dev                          # web on http://localhost:5173, API on :400
 
 **M-Pesa.** Set `FUNDING_PROVIDER=bitika`, `BITIKA_ENV=test` and your `BITIKA_API_KEY=bk_test_…`. Switching to live is
 config only (`BITIKA_ENV=live`, a `bk_live_…` key, `BITCOIN_NETWORK=mainnet`).
+
+**Service fee.** Set `SERVICE_FEE_BPS=150` (1.5%) and a `SERVICE_FEE_ADDRESS` on the same network. New bottles
+record that rate; when the recipient claims in the app, the fee goes to that address as a second output. Off by
+default.
 
 **Database.** SQLite by default (`DATABASE_URL=file:./dev.db`). Set a `postgresql://…` URL to use PostgreSQL.
 
@@ -138,11 +142,30 @@ config only (`BITIKA_ENV=live`, a `bk_live_…` key, `BITCOIN_NETWORK=mainnet`).
 | `npm run build` | Production builds of both |
 | `npm --prefix server run test:regtest` | Lock and claim on a real Bitcoin Core node (needs `BITCOIN_BIN`) |
 
+### Deploy to Vercel
+
+One Vercel project serves both: the web app as static files and the API as a Vercel Function at `/api`
+(`vercel.json`, `api/index.js`). Two things differ from running locally:
+
+- **PostgreSQL, not SQLite.** Vercel's filesystem is wiped between requests. Add a Neon database from the Vercel
+  Marketplace; it sets `DATABASE_URL`, and every build applies the schema.
+- **No background watcher.** A function can't keep a timer running, so the API checks the chain when someone opens
+  a bottle, at most once every `WATCHER_INTERVAL_MS`.
+
+Set these in the project's environment variables: `BITCOIN_NETWORK`, `PUBLIC_APP_URL` (the deployment's URL),
+`WATCHER_INTERVAL_MS=15000`, and optionally `FUNDING_PROVIDER=bitika`, `BITIKA_ENV`, `BITIKA_API_KEY` (mark it
+sensitive) and `DEV_TOOLS=true` for a signet demo. Vercel limits request bodies to 4.5 MB, so a long voice note
+plus a photo can be too big to seal there.
+
+**Auto-deploy.** Every push to `main`, including a merged PR, deploys to production once all CI checks pass (the
+`deploy` job in `.github/workflows/ci.yml`). It needs a `VERCEL_TOKEN` repository secret, created at
+vercel.com/account/tokens by someone on the Vercel project; without it the job skips with a warning.
+
 ---
 
 ## Testing
 
-- **Server (Vitest, 66 tests):** state machine, locktimes, CLTV scripts, claim transactions and signatures, the REST
+- **Server (Vitest, 73 tests):** state machine, locktimes, CLTV scripts, claim transactions and signatures, the REST
   API, the chain watcher against a fake chain, Bitika requests and signed webhooks.
 - **Real node (`test:regtest`):** starts a throwaway Bitcoin Core regtest node, locks coins to a bottle address,
   checks the claim is rejected before the date (`non-final`), moves chain time past it, and checks the claim is
@@ -160,6 +183,7 @@ config only (`BITIKA_ENV=live`, a `bk_live_…` key, `BITCOIN_NETWORK=mainnet`).
 | Limit | Why | Upgrade path |
 |---|---|---|
 | **The share link is the key** | Anyone holding it can claim once the bottle opens, including the sender, whose browser made the gift key | Recipients who need to rule that out give the sender their own public key ("They already have a Bitcoin wallet") |
+| **The service fee is collected by the app** | Bitcoin script can't require a payment output, so someone who builds their own claim with the gift key could skip it | Charge at funding instead, or a provider-side fee on M-Pesa top-ups |
 | **No undo** | Once funded, nothing moves before the date | A sender refund path in the script, designed before mainnet |
 | **Sessions live in the browser** | No passwords: a sender's bottles and share links are tied to the browser that sealed them | Optional accounts or a recovery code |
 | **M-Pesa is one way and two steps** | Bitika pays out over Lightning only, so the sender forwards the sats on-chain | Direct on-chain funding from the provider, and an M-Pesa cash-out for recipients |

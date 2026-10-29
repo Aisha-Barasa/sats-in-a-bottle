@@ -37,6 +37,8 @@ model Bottle {
   // draft | awaiting_funding | funded | sealed | unlockable | claimed (see src/domain/bottleStateMachine.ts)
   status          String            @default("draft")
   amountSats      Int
+  // Service fee fixed when the bottle is created, in basis points (150 = 1.5%); 0 = none.
+  serviceFeeBps   Int               @default(0)
   unlockAt        DateTime
   network         String
   createdAt       DateTime          @default(now())

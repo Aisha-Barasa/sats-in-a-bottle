@@ -3,6 +3,7 @@ import * as ecc from "tiny-secp256k1";
 import request from "supertest";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "../src/app.js";
+import { config } from "../src/config.js";
 import { prisma } from "../src/db.js";
 import { runWatcherOnce } from "../src/chain/watcher.js";
 import { createFundableBottle, FakeChain, newSession, PUBKEY } from "./helpers.js";
@@ -101,3 +102,35 @@ describe("recipient claim", () => {
     await request(noChain).post(`/api/access/${accessToken}/claim/prepare`).send({ address: ADDRESS }).expect(503);
   });
 });
+
+describe("service fee on claim", () => {
+  const FEE_ADDRESS = bitcoin.payments.p2wpkh({ pubkey: Buffer.from(ecc.pointFromScalar(Buffer.alloc(32, 2))!), network: bitcoin.networks.testnet }).address!;
+
+  it("uses the rate the bottle was created with and pays it as a second output", async () => {
+    const { id, accessToken, locktime } = await sealedBottle();
+    expect((await prisma.bottle.findUniqueOrThrow({ where: { id } })).serviceFeeBps).toBe(0); // off in tests
+    await prisma.bottle.update({ where: { id }, data: { serviceFeeBps: 150 } });
+    chain.mtp = locktime;
+    await runWatcherOnce(chain);
+
+    const before = config.SERVICE_FEE_ADDRESS;
+    config.SERVICE_FEE_ADDRESS = FEE_ADDRESS;
+    try {
+      const prep = await request(app).post(`/api/access/${accessToken}/claim/prepare`).send({ address: ADDRESS }).expect(200);
+      expect(prep.body.serviceFeeSats).toBe(1_500);
+      expect(prep.body.receiveSats).toBe(100_000 - prep.body.feeSats - 1_500);
+      const res = await request(app)
+        .post(`/api/access/${accessToken}/claim`)
+        .send({ address: ADDRESS, feeSats: prep.body.feeSats, signature: sign(prep.body.sighash) })
+        .expect(201);
+      expect(res.body).toMatchObject({ serviceFeeSats: 1_500, receiveSats: prep.body.receiveSats });
+      const tx = bitcoin.Transaction.fromHex(chain.broadcasts[0]!);
+      expect(tx.outs.map((o) => o.value)).toEqual([prep.body.receiveSats, 1_500]);
+      const event = await prisma.event.findFirstOrThrow({ where: { bottleId: id, type: "claim_broadcast" } });
+      expect(JSON.parse(event.metadata)).toMatchObject({ serviceFeeSats: 1_500 });
+    } finally {
+      config.SERVICE_FEE_ADDRESS = before;
+    }
+  });
+});
+

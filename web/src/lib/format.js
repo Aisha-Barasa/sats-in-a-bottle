@@ -1,4 +1,11 @@
 export const fmtSats = (n) => Number(n).toLocaleString('en-US');
+
+/** Mirrors serviceFeeFor on the server: basis points of the amount, skipped below Bitcoin's 330-sat dust limit. */
+export function serviceFee(sats, bps) {
+  const fee = Math.floor((sats * (bps || 0)) / 10_000);
+  return fee >= 330 ? fee : 0;
+}
+export const fmtBps = (bps) => `${(bps / 100).toLocaleString('en-US', { maximumFractionDigits: 2 })}%`;
 export const fmtBtc = (sats) => (sats / 1e8).toFixed(8);
 export const fmtKes = (n) => `KES ${Number(n).toLocaleString('en-KE')}`;
 export const fmtDate = (d) => new Date(d).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });

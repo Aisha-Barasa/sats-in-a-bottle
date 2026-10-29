@@ -1,6 +1,6 @@
 import cors from "cors";
 import express from "express";
-import { config } from "./config.js";
+import { config, serviceFeeBps } from "./config.js";
 import { errorHandler } from "./http.js";
 import type { ChainClient } from "./chain/mempool.js";
 import type { FundingProvider } from "./funding/provider.js";
@@ -10,12 +10,24 @@ import { devRouter } from "./routes/dev.js";
 import { mpesaRouter, quoteRouter, webhookRouter } from "./routes/funding.js";
 import { sessionRouter } from "./routes/session.js";
 
-export type AppDeps = { fundingProvider: FundingProvider | null; chain: ChainClient | null };
+export type AppDeps = {
+  fundingProvider: FundingProvider | null;
+  chain: ChainClient | null;
+  /** Serverless only: brings bottles up to date with the chain before reads (see onDemandWatcher). */
+  refreshChain?: () => Promise<void>;
+};
 
 export function createApp(deps: AppDeps = { fundingProvider: null, chain: null }) {
   const app = express();
   app.disable("x-powered-by");
   app.use(cors({ origin: config.CORS_ORIGIN.split(",") }));
+  const { refreshChain } = deps;
+  if (refreshChain) {
+    app.use(["/api/bottles", "/api/access"], (req, _res, next) => {
+      if (req.method !== "GET") return next();
+      refreshChain().then(() => next(), next);
+    });
+  }
   // Mounted before express.json(): signatures are checked against the raw body.
   app.use("/api/webhooks", webhookRouter(deps.fundingProvider));
   // The encrypted message can carry a voice note and a photo, so it gets a bigger body limit.
@@ -30,6 +42,7 @@ export function createApp(deps: AppDeps = { fundingProvider: null, chain: null }
       network: config.BITCOIN_NETWORK,
       fundingProvider: p ? { name: p.name, env: config.BITIKA_ENV } : null,
       devTools: config.DEV_TOOLS,
+      serviceFeeBps,
       limits: { minSats: MIN_BOTTLE_SATS, minKes: p?.minKes ?? null, maxKes: p?.maxKes ?? null },
     });
   });
