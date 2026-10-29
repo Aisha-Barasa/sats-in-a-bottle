@@ -157,6 +157,10 @@ Set these in the project's environment variables: `BITCOIN_NETWORK`, `PUBLIC_APP
 sensitive) and `DEV_TOOLS=true` for a signet demo. Vercel limits request bodies to 4.5 MB, so a long voice note
 plus a photo can be too big to seal there.
 
+**Auto-deploy.** Every push to `main`, including a merged PR, deploys to production once all CI checks pass (the
+`deploy` job in `.github/workflows/ci.yml`). It needs a `VERCEL_TOKEN` repository secret, created at
+vercel.com/account/tokens by someone on the Vercel project; without it the job skips with a warning.
+
 ---
 
 ## Testing
